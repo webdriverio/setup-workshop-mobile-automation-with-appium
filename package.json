@@ -1,0 +1,12 @@
+{
+  "name": "workshop-setup-check",
+  "version": "1.0.0",
+  "description": "Environment health check for the Appium + WebdriverIO workshop",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-setup.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
