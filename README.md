@@ -5,27 +5,42 @@ Before the workshop starts, make sure your machine is set up correctly. Dependin
 > [!IMPORTANT]
 > The workshop is packed and we don't have time to troubleshoot installation issues on the day itself. Please make sure everything is set up and the check script passes **before you arrive**. If you get stuck, reach out in advance so we can help.
 
+> [!NOTE]
+> **Appium is not part of this setup guide.** During the workshop we pull in the Appium server, drivers, and Appium Inspector together as project dependencies. You do not need to install Appium now.
+
+---
+
+## Requirements
+
+Make sure your machine meets these minimum versions before starting. If something is missing or too old, the steps below walk you through installing or updating it.
+
+| Tool | Minimum version | How to check |
+|---|---|---|
+| **Git** | 2.x | `git --version` |
+| **Node.js** | 22+ (even versions only: 22, 24, ...) | `node --version` |
+| **Visual Studio Code** | Latest | `code --version` |
+| **Android Studio** | Panda | Android Studio → About |
+| **Android SDK** | API 35 (Android 15) or higher | Android Studio → SDK Manager |
+| **Xcode** *(macOS only)* | 26.4 | `xcodebuild -version` |
+| **iOS Simulator** *(macOS only)* | iOS 26.2 or higher | Xcode → Settings → Platforms |
+
 ---
 
 ## What you'll install
 
 | Tool | Why we need it |
 |---|---|
-| **Git** | To download the workshop project to your machine |
+| **Git** | To clone this repository and run the check script |
 | **Node.js** (via NVM) | WebdriverIO runs on Node.js |
 | **Visual Studio Code** | The editor we use to write and run tests |
 | **Android Studio** | Gives us the Android SDK and the emulator |
 | **Xcode** *(macOS only)* | Gives us the iOS Simulator |
 
-> [!IMPORTANT]
-> Appium itself will be installed **together during the workshop**.
-
-
 ---
 
 ## 1. Git
 
-Git is used to download the workshop project to your machine.
+Git is used to clone this repository to your machine.
 
 See [docs/git.md](docs/git.md) for full instructions.
 
@@ -72,7 +87,7 @@ Close your terminal completely and open a new one, then:
 ```bash
 nvm install --lts
 nvm use --lts
-node --version   # should print v22.x.x or later
+node --version   # should print v22.x.x or v24.x.x
 ```
 
 </details>
@@ -93,7 +108,7 @@ Close your terminal completely and open a new one, then:
 ```bash
 nvm install --lts
 nvm use --lts
-node --version   # should print v22.x.x or later
+node --version   # should print v22.x.x or v24.x.x
 ```
 
 </details>
@@ -101,18 +116,33 @@ node --version   # should print v22.x.x or later
 <details>
 <summary><strong>Windows</strong></summary>
 
-See [docs/nvm-windows.md](docs/nvm-windows.md) for full instructions.
+See [docs/nvm-windows.md](docs/nvm-windows.md) for full instructions, including alternatives via **winget** and **Chocolatey**.
 
-On Windows we use **nvm-windows**:
+On Windows we use **nvm-windows**. Pick whichever installation method suits you:
+
+**Option A, installer:**
 
 1. Download `nvm-setup.exe` from the [nvm-windows releases page](https://github.com/coreybutler/nvm-windows/releases/latest).
-2. Run the installer and keep all default options.
-3. Open a **new** PowerShell window and run:
+2. Run it and keep all default options.
+
+**Option B, winget:**
+
+```powershell
+winget install CoreyButler.NVMforWindows
+```
+
+**Option C, Chocolatey:**
+
+```powershell
+choco install nvm
+```
+
+After installing with any of the options above, open a **new** PowerShell window and run:
 
 ```powershell
 nvm install lts
 nvm use lts
-node --version   # should print v22.x.x or later
+node --version   # should print v22.x.x or v24.x.x
 ```
 
 </details>
@@ -144,11 +174,28 @@ See [docs/android-studio.md](docs/android-studio.md) for full instructions.
 
 **Quick steps:**
 
-1. Download from [https://developer.android.com/studio](https://developer.android.com/studio) and install.
+1. Download Android Studio from [https://developer.android.com/studio](https://developer.android.com/studio) and install.
 2. Run the Setup Wizard inside Android Studio, choose **Standard**.
-3. Set `ANDROID_HOME` and add `platform-tools` + `emulator` to your `PATH` (explained in the guide).
+3. Set `ANDROID_HOME` and add `platform-tools` + `emulator` to your `PATH` (the check script can do this for you automatically).
 4. Open **Device Manager**, create a **Pixel 9** device with **API 36**, and start it.
-5. Confirm with `adb devices`, you should see `emulator-5554 device`.
+5. Confirm with:
+   ```bash
+   adb devices
+   # List of devices attached
+   # emulator-5554   device
+   ```
+
+**Starting an emulator from the terminal:**
+
+```bash
+emulator -avd Pixel_9_API_36
+```
+
+Or use [`start-android-emulator`](https://github.com/wswebcreation/start-android-emulator) for an interactive picker:
+
+```bash
+npx start-android-emulator
+```
 
 ---
 
@@ -163,14 +210,18 @@ See [docs/xcode-ios.md](docs/xcode-ios.md) for full instructions.
 1. Install **Xcode** from the App Store (≈ 15 GB, download in advance!).
 2. Accept the licence: `sudo xcodebuild -license accept`
 3. Install platform tools: `xcodebuild -runFirstLaunch`
-4. Open **Xcode → Settings → Platforms** and make sure **iOS 26** is installed.
-5. Open the Simulator app and boot an **iPhone 17 Pro** device.
+4. Open **Xcode → Settings → Platforms** and make sure an iOS runtime is installed.
+5. Start a simulator from the terminal:
+   ```bash
+   xcrun simctl boot "iPhone 17 Pro"
+   open -a Simulator
+   ```
 
 ---
 
 ## 7. Verify Your Setup
 
-From inside the cloned workshop folder, run:
+From inside the cloned folder, run:
 
 ```bash
 npm run check
@@ -205,7 +256,7 @@ Android
 
 iOS (macOS only)
   ✔  Xcode, /Applications/Xcode.app/Contents/Developer
-  ✔  xcodebuild, Xcode 16.x
+  ✔  xcodebuild, Xcode 26.4
   ⚠  No iOS Simulator currently running (fine before the workshop)
 
 ──────────────────────────────────────────────────
@@ -234,9 +285,11 @@ Still stuck? Reach out before the workshop so we can sort it out in advance.
 
 ## What we install during the workshop
 
-You do **not** need to install these ahead of time:
+You do **not** need to install any of the following ahead of time:
 
-- Appium (global npm package)
+- Appium server
 - Appium drivers (`uiautomator2` for Android, `xcuitest` for iOS)
-- Appium Inspector (optional GUI tool)
-- The workshop project itself and its dependencies (shared on the day)
+- Appium Inspector
+- The workshop project itself and its dependencies
+
+We pull all of these in together during the workshop as project dependencies.

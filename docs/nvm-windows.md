@@ -4,10 +4,39 @@ On Windows we use **nvm-windows**, a separate tool that gives you the same workf
 
 ## 1. Install nvm-windows
 
+Pick whichever option works best for you.
+
+<details>
+<summary><strong>Option A, installer</strong></summary>
+
 1. Go to the [nvm-windows releases page](https://github.com/coreybutler/nvm-windows/releases/latest).
 2. Look for the **Assets** section and download **`nvm-setup.exe`**.
 3. Run the installer. Click through with all default options, they're fine.
 4. At the end, click **Finish**.
+
+</details>
+
+<details>
+<summary><strong>Option B, winget</strong></summary>
+
+winget is the Windows Package Manager, built into Windows 10 (1709+) and Windows 11. Open PowerShell and run:
+
+```powershell
+winget install CoreyButler.NVMforWindows
+```
+
+</details>
+
+<details>
+<summary><strong>Option C, Chocolatey</strong></summary>
+
+If you already have [Chocolatey](https://chocolatey.org) installed, open PowerShell as Administrator and run:
+
+```powershell
+choco install nvm
+```
+
+</details>
 
 > [!IMPORTANT]
 > Always open a **new** terminal window after installation. Existing windows won't see nvm-windows yet.

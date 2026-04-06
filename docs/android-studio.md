@@ -170,7 +170,25 @@ Your virtual device is now created and will appear in the Device Manager list.
 
 ## 4. Start the Emulator
 
+### Using Android Studio
+
 In the **Device Manager**, click the **play button ▶** next to your newly created device.
+
+### Using the command line
+
+First, list your available AVDs:
+
+```bash
+emulator -list-avds
+```
+
+Then start one by name (replace the name with what you see in the list above):
+
+```bash
+emulator -avd Pixel_9_API_36
+```
+
+The emulator runs in the foreground. To keep using your terminal, add `&` at the end on macOS/Linux, or open a separate terminal window on Windows.
 
 A window will open showing a virtual Android phone booting up. The first boot takes around 1-2 minutes. Once you see the Android home screen (with a clock and some icons), the emulator is ready.
 
