@@ -224,6 +224,7 @@ See [docs/xcode-ios.md](docs/xcode-ios.md) for full instructions.
 From inside the cloned folder, run:
 
 ```bash
+npm install
 npm run check
 ```
 

@@ -7,7 +7,7 @@
  * Or:        npm run check   (from the repo root)
  */
 
-import { execSync } from 'node:child_process'
+import { execSync, spawnSync } from 'node:child_process'
 import { existsSync, appendFileSync } from 'node:fs'
 import { platform, homedir } from 'node:os'
 import { join } from 'node:path'
@@ -41,6 +41,18 @@ function run(cmd) {
 
 function checkCommand(cmd, args = '--version') {
   return run(`${cmd} ${args}`)
+}
+
+function runCapture(cmd, timeout = 120000) {
+  const shell = IS_WIN ? 'cmd.exe' : 'sh'
+  const shellArgs = IS_WIN ? ['/c', cmd] : ['-c', cmd]
+  const result = spawnSync(shell, shellArgs, { encoding: 'utf8', timeout })
+  const output = ((result.stdout || '') + (result.stderr || '')).trim()
+  return { output, exitCode: result.status ?? 1 }
+}
+
+function stripAnsi(str) {
+  return str.replace(/\x1b\[[0-9;]*m/g, '')
 }
 
 async function ask(question) {
@@ -109,7 +121,7 @@ await check('Node.js', () => {
   if (major >= 20) {
     ok(`node ${version}`)
   } else {
-    fail(`node ${version} is too old, need v20 or later`)
+    fail(`node ${version} is too old, need v20 or later (even versions only: 22, 24, ...)`)
     hasErrors = true
     info('Run: nvm install --lts && nvm use --lts')
   }
@@ -204,21 +216,6 @@ await check('code CLI', async () => {
       info('VS Code does not seem to be installed.')
       info('Download from https://code.visualstudio.com')
     }
-  }
-})
-
-// ── Java ──────────────────────────────────────────────────────────────────────
-
-header('Java')
-await check('Java', () => {
-  const version = run('java -version 2>&1')
-  if (version) {
-    ok(`Java, ${version.split('\n')[0]}`)
-  } else {
-    warn('java not found in PATH')
-    info('Android Studio ships with its own JDK, so this is not a hard requirement.')
-    info('If you run into Gradle errors later, check:')
-    info('  Android Studio → Settings → Build → Build Tools → Gradle → Gradle JDK')
   }
 })
 
@@ -482,7 +479,6 @@ if (IS_MAC) {
         booted.forEach((d) => info(`${d.name} (${d.udid})`))
       } else {
         warn('No iOS Simulator currently running (fine before the workshop)')
-        info('To start one: open Simulator.app or run: xcrun simctl boot "<device name>"')
       }
     } catch {
       warn('Could not read simulator status')
@@ -491,6 +487,31 @@ if (IS_MAC) {
 } else {
   header('iOS')
   info('iOS testing requires macOS + Xcode. Skipped on this platform.')
+}
+
+// ── Appium driver doctor ──────────────────────────────────────────────────────
+
+function runDoctor(driver) {
+  info(`Running appium driver doctor ${driver} (this may take a moment)...`)
+  const { output } = runCapture(`npx appium driver doctor ${driver}`)
+  const clean = stripAnsi(output)
+
+  // Print every non-empty line from the doctor so the user sees the detail
+  clean.split('\n').filter(Boolean).forEach((line) => info(line))
+
+  if (clean.includes('0 required fixes needed')) {
+    ok(`appium driver doctor ${driver}: 0 required fixes needed`)
+  } else {
+    fail(`appium driver doctor ${driver}: required fixes found, see output above`)
+    hasErrors = true
+  }
+}
+
+header('Appium')
+await check('uiautomator2 driver doctor', () => runDoctor('uiautomator2'))
+
+if (IS_MAC) {
+  await check('xcuitest driver doctor', () => runDoctor('xcuitest'))
 }
 
 // ─── summary ─────────────────────────────────────────────────────────────────
@@ -504,5 +525,5 @@ if (hasErrors) {
   process.exit(1)
 } else {
   console.log(`\n${GREEN}${BOLD}All checks passed!${RESET} Your machine is ready for the workshop.`)
-  console.log('Appium will be installed together during the workshop itself.\n')
+  console.log('The workshop project has its own Appium setup that we will use on the day.\n')
 }

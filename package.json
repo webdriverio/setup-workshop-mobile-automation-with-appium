@@ -7,6 +7,11 @@
     "check": "node scripts/check-setup.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "appium": "^3.3.1",
+    "appium-uiautomator2-driver": "^7.1.2",
+    "appium-xcuitest-driver": "^11.0.1"
   }
 }
