@@ -7,7 +7,7 @@
     "check": "node scripts/check-setup.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "devDependencies": {
     "appium": "^3.3.1",
