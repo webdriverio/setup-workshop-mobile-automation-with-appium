@@ -245,9 +245,6 @@ Node.js
 Visual Studio Code
   ✔  Visual Studio Code 1.99.0
 
-Java
-  ✔  Java, openjdk version "17.0.10"
-
 Android
   ✔  ANDROID_HOME = /Users/you/Library/Android/sdk
   ✔  adb, Android Debug Bridge version 1.0.41
@@ -255,10 +252,19 @@ Android
        Pixel_9_API_36
   ⚠  No running Android devices or emulators (fine before the workshop)
 
+Java
+  ✔  JAVA_HOME = /Applications/Android Studio.app/Contents/jbr/Contents/Home
+
 iOS (macOS only)
   ✔  Xcode, /Applications/Xcode.app/Contents/Developer
   ✔  xcodebuild, Xcode 26.4
   ⚠  No iOS Simulator currently running (fine before the workshop)
+
+Appium
+     Running appium driver doctor uiautomator2 (this may take a moment)...
+  ✔  appium driver doctor uiautomator2: 0 required fixes needed
+     Running appium driver doctor xcuitest (this may take a moment)...
+  ✔  appium driver doctor xcuitest: 0 required fixes needed
 
 ──────────────────────────────────────────────────
 

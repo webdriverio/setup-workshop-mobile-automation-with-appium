@@ -436,6 +436,144 @@ await check('running devices', () => {
   }
 })
 
+// ── Java ──────────────────────────────────────────────────────────────────────
+
+function detectAndroidStudioPath() {
+  const candidates = IS_MAC
+    ? ['/Applications/Android Studio.app']
+    : IS_WIN
+      ? [
+          join(process.env['ProgramFiles'] || 'C:\\Program Files', 'Android', 'Android Studio'),
+          join(process.env.LOCALAPPDATA || homedir(), 'Programs', 'Android Studio'),
+        ]
+      : [
+          '/opt/android-studio',
+          join(homedir(), 'android-studio'),
+          '/snap/android-studio/current',
+        ]
+  return candidates.find(existsSync) || null
+}
+
+function detectJavaHome() {
+  // Derive JBR from the Android Studio installation, it's always present if Studio is installed
+  const studioPath = detectAndroidStudioPath()
+  if (studioPath) {
+    const jbrPath = IS_MAC
+      ? join(studioPath, 'Contents', 'jbr', 'Contents', 'Home')
+      : join(studioPath, 'jbr')
+    if (existsSync(join(jbrPath, 'bin', IS_WIN ? 'java.exe' : 'java'))) return jbrPath
+  }
+
+  // macOS system Java
+  if (IS_MAC) {
+    const detected = run('/usr/libexec/java_home 2>/dev/null')
+    if (detected && existsSync(join(detected, 'bin', 'java'))) return detected
+  }
+
+  // Linux common locations
+  if (!IS_WIN && !IS_MAC) {
+    const candidates = [
+      '/usr/lib/jvm/java-17-openjdk-amd64',
+      '/usr/lib/jvm/java-17-openjdk',
+      '/usr/lib/jvm/java-21-openjdk-amd64',
+      '/usr/lib/jvm/java-21-openjdk',
+      '/usr/lib/jvm/temurin-17',
+    ]
+    for (const p of candidates) {
+      if (existsSync(join(p, 'bin', 'java'))) return p
+    }
+  }
+
+  return null
+}
+
+function showJavaManualInstructions(javaHome) {
+  if (IS_WIN) {
+    info('Set JAVA_HOME manually via System Properties → Environment Variables:')
+    info(`  Variable name:  JAVA_HOME`)
+    info(`  Variable value: ${javaHome}`)
+  } else {
+    const profile = IS_MAC ? '~/.zshrc' : '~/.bashrc'
+    info(`Add this line to ${profile}:`)
+    info(`  export JAVA_HOME="${javaHome}"`)
+    info(`Then run: source ${profile}`)
+  }
+}
+
+async function fixJavaEnv(javaHome) {
+  if (IS_WIN) {
+    const psCmd = `[Environment]::SetEnvironmentVariable('JAVA_HOME', '${javaHome}', 'User')`
+    try {
+      execSync(`powershell -NoProfile -Command "${psCmd}"`, { stdio: 'pipe' })
+      process.env.JAVA_HOME = javaHome
+      ok(`JAVA_HOME set to ${javaHome}`)
+      warn('Open a new terminal for these changes to take effect.')
+    } catch (e) {
+      fail('Could not set JAVA_HOME automatically.')
+      info(`Error: ${e.message}`)
+      showJavaManualInstructions(javaHome)
+    }
+  } else {
+    const profile = IS_MAC ? join(homedir(), '.zshrc') : join(homedir(), '.bashrc')
+    const lines = [
+      '',
+      '# Java (added by workshop setup check)',
+      `export JAVA_HOME="${javaHome}"`,
+    ].join('\n') + '\n'
+
+    try {
+      appendFileSync(profile, lines)
+      process.env.JAVA_HOME = javaHome
+      ok(`JAVA_HOME set to ${javaHome}`)
+      ok(`Written to ${profile}`)
+      warn('Open a new terminal for these changes to take effect in future sessions.')
+    } catch (e) {
+      fail('Could not write to shell profile automatically.')
+      info(`Error: ${e.message}`)
+      showJavaManualInstructions(javaHome)
+    }
+  }
+}
+
+header('Java')
+await check('JAVA_HOME', async () => {
+  const home = process.env.JAVA_HOME
+  if (home && existsSync(join(home, 'bin', IS_WIN ? 'java.exe' : 'java'))) {
+    ok(`JAVA_HOME = ${home}`)
+    return
+  }
+
+  if (home) {
+    warn(`JAVA_HOME is set to "${home}" but no java binary was found there`)
+  }
+
+  const detected = detectJavaHome()
+
+  if (!detected) {
+    fail('JAVA_HOME is not set and Java could not be found automatically')
+    hasErrors = true
+    info('Appium needs Java. The easiest source is Android Studio\'s bundled JDK.')
+    info('In Android Studio: Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK')
+    info('Or install Java from https://adoptium.net')
+    return
+  }
+
+  warn(`JAVA_HOME is not set, but Java was found at: ${detected}`)
+
+  if (process.stdin.isTTY) {
+    const answer = await ask('Fix it now by setting JAVA_HOME? [y/N]:')
+    if (answer === 'y' || answer === 'yes') {
+      await fixJavaEnv(detected)
+    } else {
+      showJavaManualInstructions(detected)
+      hasErrors = true
+    }
+  } else {
+    showJavaManualInstructions(detected)
+    hasErrors = true
+  }
+})
+
 // ── iOS (macOS only) ──────────────────────────────────────────────────────────
 
 if (IS_MAC) {
