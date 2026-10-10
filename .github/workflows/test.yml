@@ -12,6 +12,8 @@ jobs:
   test:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    # Every system should finish well within this, a hanging test must not block the pull request for hours
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
