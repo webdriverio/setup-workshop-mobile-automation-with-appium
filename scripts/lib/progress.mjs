@@ -1,3 +1,4 @@
+import { record, recordFailure } from './report.mjs'
 import { dim, green, red } from './ui.mjs'
 
 const PLAIN = { busy: '…', ok: '✔', fail: '✘' }
@@ -47,7 +48,11 @@ export function createProgress(names, { stream = process.stdout, interactive = B
 
   return {
     update: (name, text) => set(name, text, 'busy'),
-    done: (name, passed, text) => set(name, text, passed ? 'ok' : 'fail'),
+    done: (name, passed, text) => {
+      set(name, text, passed ? 'ok' : 'fail')
+      record(`  ${PLAIN[passed ? 'ok' : 'fail']}  [${name}] ${text}`)
+      if (!passed) recordFailure(`[${name}] ${text}`)
+    },
     stop: () => {
       clearInterval(timer)
     },

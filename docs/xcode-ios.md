@@ -90,13 +90,17 @@ You do not need to install the Xcode command line tools separately, Xcode includ
 
 ## Known issue: Xcode 27 does not list a downloaded iOS version
 
-**What you see:** you download iOS 27 in Xcode (Settings → Components, or `xcodebuild -downloadPlatform iOS`), and Xcode says it is installed. But in the Device Hub the iOS version cannot be selected ("No Runtimes Available"), and this command shows nothing:
+### What you see
+
+You download iOS 27 in Xcode (Settings → Components, or `xcodebuild -downloadPlatform iOS`), and Xcode says it is installed. But in the Device Hub the iOS version cannot be selected ("No Runtimes Available"), and this command shows nothing:
 
 ```bash
 xcrun simctl list runtimes
 ```
 
-**Why:** the download is fine, but macOS fails to verify it and never registers it. You can see this here:
+### Why
+
+The download is fine, but macOS fails to verify it and never registers it. You can see this here:
 
 ```bash
 xcrun simctl runtime list
@@ -107,7 +111,9 @@ xcrun simctl runtime verify <id>
 
 No simulator can be created for a runtime that is not registered. We saw this on Xcode 27.0 (27A266a) on Apple Silicon, with iOS 26.5 and 27.0.
 
-**Fix:** the download contains a plain `.dmg`. Adding that registers the runtime the old way. `npm run setup` does this for you. By hand:
+### Fix
+
+The download contains a plain `.dmg`. Adding that registers the runtime the old way. `npm run setup` does this for you. By hand:
 
 ```bash
 # 1. the folder of the downloaded runtime: the "path" of the iOS 27.0 entry
@@ -122,7 +128,9 @@ It costs almost no extra disk space. The old entry stays in `simctl runtime list
 
 Also try `xcodebuild -downloadPlatform iOS -architectureVariant arm64`. Without the variant, Xcode 27 sometimes cannot find the iOS download at all.
 
-**Other reports of the same problem** (all on Apple's developer forums, we found no reaction or fix from Apple):
+### Other reports of the same problem
+
+(all on Apple's developer forums, we found no reaction or fix from Apple):
 
 - [iOS 27 & watchOS 27 Simulator runtimes download but never register](https://developer.apple.com/forums/thread/830152): the cause (-67054) and the `.dmg` fix we use.
 - [Xcode 27 No iOS 27 Simulators](https://developer.apple.com/forums/thread/849096): the same on the release build, "Add Platforms" only lists iOS 26.5 or older. Deleting and downloading again in Settings → Components did not help.

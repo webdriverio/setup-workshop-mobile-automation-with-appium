@@ -59,13 +59,13 @@ git --version
 <details>
 <summary><strong>Linux</strong></summary>
 
-**Debian / Ubuntu:**
+### Debian / Ubuntu
 
 ```bash
 sudo apt update && sudo apt install git
 ```
 
-**Fedora / RHEL:**
+### Fedora / RHEL
 
 ```bash
 sudo dnf install git

@@ -13,7 +13,7 @@ Go to [https://code.visualstudio.com](https://code.visualstudio.com) and click t
 2. Drag **Visual Studio Code** into your **Applications** folder. Don't run it directly from Downloads.
 3. Open VS Code from your Applications folder. If macOS warns you that it was downloaded from the internet, click **Open**.
 
-**Make the `code` terminal command work:**
+### Make the `code` terminal command work
 
 The `code` command lets you open files and folders in VS Code directly from the terminal (e.g. `code .` to open the current folder). To enable it:
 
@@ -55,7 +55,7 @@ If you forgot to check "Add to PATH", run the installer again and check it this 
 <details>
 <summary><strong>Linux</strong></summary>
 
-**Debian / Ubuntu:**
+### Debian / Ubuntu
 
 ```bash
 sudo apt install wget gpg
@@ -65,7 +65,7 @@ echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] h
 sudo apt update && sudo apt install code
 ```
 
-**Fedora / RHEL:**
+### Fedora / RHEL
 
 ```bash
 sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -95,7 +95,7 @@ Extensions add extra features to VS Code. Install these two before the workshop:
 | **Markdown Preview Enhanced** | Yiyi Wang | Preview markdown files (like this README) directly in VS Code |
 | **Pretty TypeScript Errors** | yoavbls | Makes TypeScript error messages readable instead of walls of red text |
 
-**To install:**
+### To install
 
 1. Open VS Code.
 2. Click the **Extensions** icon in the left sidebar (it looks like four squares, or press **⌘/Ctrl + Shift + X**).

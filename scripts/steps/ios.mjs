@@ -3,6 +3,7 @@ import {
   licenseAccepted, listSimulators, registerDownloadedRuntime, simulatorNames, simulatorSdkVersion,
 } from '../lib/ios.mjs'
 import { dry, runPlan } from '../lib/plan.mjs'
+import { appHint, appStep } from './app.mjs'
 import { FLAGS, bold, fail, header, info, ok, warn } from '../lib/ui.mjs'
 
 /** Look at the machine and describe every iOS step. Nothing is changed here. */
@@ -40,6 +41,7 @@ export function planIos() {
       done: Boolean(version) && missingSims.length === 0,
       apply: () => createSimulatorsStep(version, missingSims),
     },
+    appStep('ios'),
   ]
 }
 
@@ -128,4 +130,5 @@ function printSimulatorHint(names) {
   names.forEach((name) => info(`  xcrun simctl boot ${name}`))
   info('  open -a Simulator')
   info('Check that they are running with: xcrun simctl list devices | grep Booted')
+  appHint()
 }

@@ -1,4 +1,5 @@
 import { createProgress } from '../lib/progress.mjs'
+import { recordLog } from '../lib/report.mjs'
 import { appiumErrorLines, explainFailure, runSmokeTest } from '../lib/smoke.mjs'
 import { info } from '../lib/ui.mjs'
 
@@ -29,6 +30,7 @@ async function checkSession({ name, ensureDevice }, progress) {
       return { name, passed, details }
     }
     progress.done(name, false, 'could not open a session')
+    recordLog(`${name}: output of the test runner and Appium`, log)
     details.push(explainFailure(log.join('\n'), key), ...appiumErrorLines(log).map((line) => `  ${line}`))
   } catch (e) {
     progress.done(name, false, 'could not get a device')

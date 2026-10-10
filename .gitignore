@@ -2,3 +2,6 @@ node_modules/
 
 # test coverage output
 coverage/
+
+# report of a failed check, to send to the trainer
+workshop-check-report.txt

@@ -3,6 +3,7 @@ import { mkdir, rename, rm } from 'node:fs/promises'
 import { arch, homedir } from 'node:os'
 import { join } from 'node:path'
 import { download, extractArchive } from './download.mjs'
+import { sdkManagerProxyArgs } from './network.mjs'
 import { IS_MAC, IS_WIN, run, runFile } from './shell.mjs'
 
 // Android 17. Pinned on purpose (not "latest"), so every attendee gets the same version. 37.1+ only ship 16 KB page-size images.
@@ -180,7 +181,7 @@ export function listInstalledPackages(sdk, jdk) {
 
 export function acceptLicenses(sdk, jdk) {
   const sdkmanager = sdkTool(sdk, 'sdkmanager')
-  return runFile(sdkmanager, [`--sdk_root=${sdk}`, '--licenses'], {
+  return runFile(sdkmanager, [`--sdk_root=${sdk}`, ...sdkManagerProxyArgs(), '--licenses'], {
     env: toolEnv(sdk, jdk),
     input: 'y\n'.repeat(50),
   }).exitCode === 0
@@ -188,7 +189,7 @@ export function acceptLicenses(sdk, jdk) {
 
 export function installPackages(sdk, jdk, packages) {
   const sdkmanager = sdkTool(sdk, 'sdkmanager')
-  return runFile(sdkmanager, [`--sdk_root=${sdk}`, '--install', ...packages], {
+  return runFile(sdkmanager, [`--sdk_root=${sdk}`, ...sdkManagerProxyArgs(), '--install', ...packages], {
     env: toolEnv(sdk, jdk),
     inherit: true,
   }).exitCode === 0

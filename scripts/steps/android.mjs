@@ -5,6 +5,7 @@ import {
 } from '../lib/android.mjs'
 import { applyToProcess, persistEnv } from '../lib/env.mjs'
 import { dry, runPlan } from '../lib/plan.mjs'
+import { appHint, appStep } from './app.mjs'
 import { FLAGS, bold, fail, header, info, ok, warn } from '../lib/ui.mjs'
 
 /**
@@ -52,6 +53,7 @@ export function planAndroid() {
       detail: AVD_NAMES.join(', '),
       apply: () => createAvdsStep(ctx, missingAvds),
     },
+    appStep('android'),
     {
       id: 'env',
       title: 'Environment variables',
@@ -167,6 +169,7 @@ function printStartHint(newTerminal) {
   info('Or start them directly, one per terminal:')
   AVD_NAMES.forEach((name) => info(`  emulator -avd ${name}`))
   info('Check that they are running with: adb devices')
+  appHint()
 }
 
 export async function setupAndroid() {

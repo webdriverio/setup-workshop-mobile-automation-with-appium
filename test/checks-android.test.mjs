@@ -13,7 +13,7 @@ mock.module('node:fs', { namedExports: { ...fs, existsSync } })
 mock.module('../scripts/lib/android.mjs', { namedExports: { ...lib, AVD_NAMES, MIN_JAVA: 17 } })
 mock.module('../scripts/lib/env.mjs', { namedExports: { applyToProcess } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run } })
-const { checkAndroidSdk, checkEmulators, checkJava } = await import('../scripts/checks/android.mjs')
+const { checkAcceleration, checkAndroidSdk, checkEmulators, checkJava } = await import('../scripts/checks/android.mjs')
 
 const savedEnv = { ...process.env }
 let output
@@ -124,4 +124,16 @@ test('the emulator check fails without the emulator binary', () => {
   run.mock.mockImplementation(() => null)
   assert.equal(checkEmulators(), false)
   assert.match(text(), /emulator not found/)
+})
+
+test('acceleration passes when the emulator can use it', () => {
+  assert.equal(checkAcceleration(), true)
+  assert.match(text(), /Hardware acceleration for the emulator/)
+})
+
+test('missing acceleration is only a warning, with what to do', () => {
+  run.mock.mockImplementation(() => null)
+  assert.equal(checkAcceleration(), true)
+  assert.match(text(), /acceleration is not available/)
+  assert.match(text(), /emulator -accel-check/)
 })

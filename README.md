@@ -21,6 +21,8 @@ npm run check   # proves it works by running a small test on your emulator/simul
 
 Both are safe to run as often as you like. `npm run setup` is the one that changes your machine, and it continues where it left off. `npm run check` only looks: it never changes anything, and for everything that is missing it tells you to run `npm run setup`.
 
+Big downloads (the Android SDK, the demo apps) continue where they stopped when your connection drops, so a bad wifi does not mean starting over.
+
 `npm run setup` checks which platforms your machine supports and only shows those. Android works on macOS, Windows and Linux. iOS needs macOS and Xcode, so on Windows or Linux you won't see iOS in the list, and that is expected.
 
 ---
@@ -79,7 +81,7 @@ If `/dev/kvm` doesn't exist, enable virtualization in your BIOS/UEFI and install
 
 </details>
 
-Once the Android tools are installed (step 5) you can confirm acceleration works with `emulator -accel-check`.
+Once the Android tools are installed (step 5) `npm run check` tests this for you. You can also run it yourself: `emulator -accel-check`.
 
 ### Tools
 
@@ -105,7 +107,9 @@ Once the Android tools are installed (step 5) you can confirm acceleration works
 
 Git is used to clone this repository to your machine.
 
-**Quick check:** open a terminal and run:
+### Quick check
+
+Open a terminal and run:
 
 ```bash
 git --version
@@ -135,7 +139,7 @@ NVM (Node Version Manager) installs and manages Node.js for you. It avoids permi
 
 See [docs/nvm-mac.md](docs/nvm-mac.md) for full instructions.
 
-**Quick steps:**
+### Quick steps
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.8/install.sh | bash
@@ -160,7 +164,7 @@ node --version   # should print v24.x.x
 
 See [docs/nvm-linux.md](docs/nvm-linux.md) for full instructions.
 
-**Quick steps:**
+### Quick steps
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.8/install.sh | bash
@@ -244,28 +248,32 @@ It first checks your machine and shows you what we need for the workshop, with a
 2. **Android command-line tools** (about 170 MB), if there is no Android SDK yet.
 3. **Android SDK packages** (about 6 GB of disk space once installed): the Android 17 platform, the emulator, `adb` and a system image.
 4. **Two emulators.** The workshop needs two, so we create `Workshop_1_Pixel_10_API_37_0` and `Workshop_2_Pixel_10_API_37_0` (a Pixel 10 running Android 17, with the Pixel 10 device frame).
-5. **Environment variables.** `ANDROID_HOME`, `JAVA_HOME` and your `PATH`, so Appium and `adb` can find everything.
+5. **The Android demo app** (118 MB), the app we test in the workshop. Downloaded now, so you don't have to do it on the conference wifi.
+6. **Environment variables.** `ANDROID_HOME`, `JAVA_HOME` and your `PATH`, so Appium and `adb` can find everything.
 
-**Where things end up**
+### Where things end up
 
 | What | Where |
 |---|---|
 | Android SDK | - MacOS: `~/Library/Android/sdk` <br />- Linux: `~/Android/Sdk` (Linux) <br /> - Windows: `%LOCALAPPDATA%\Android\Sdk` |
 | Java (only if downloaded) | `~/.jdks/temurin-21` (the folder IntelliJ and Android Studio also use for JDKs) |
+| Demo apps (Android and iOS) | `Downloads/appium-workshop-apps`. On the day you copy them into the `apps` folder of the workshop project, we will tell you when. |
 | Environment variables | One block in `~/.zshrc` (macOS) or `~/.bashrc` (Linux), user environment variables on Windows |
 
 When the script is done, **open a new terminal** so the environment variables apply.
 
-**Options**
+### Options
 
 ```bash
 npm run setup -- --dry-run   # show what would happen, change nothing
 npm run setup -- --yes       # don't ask questions, set up everything for your machine
 ```
 
-**Already have Java or an Android SDK?** The script finds and reuses them. It only downloads what is missing, and it only adds the environment variables that are missing.
+### Already have Java or an Android SDK?
 
-**Start the emulators**
+The script finds and reuses them. It only downloads what is missing, and it only adds the environment variables that are missing.
+
+### Start the emulators
 
 Use [start-android-emulator](https://github.com/wswebcreation/start-android-emulator), it lists your emulators and starts the ones you pick:
 
@@ -293,14 +301,14 @@ adb devices
 
 iOS automation requires Xcode, which is only available on macOS. If you're on Windows or Linux you'll focus on Android during the iOS parts of the workshop.
 
-You install **Xcode** yourself from the App Store (≈ 15 GB, download it in advance and open it once). Then run `npm run setup` and choose **iOS**. It accepts the Xcode licence (asks for your Mac password), downloads the iOS simulator runtime (≈ 8 GB) and creates the two workshop simulators.
+You install **Xcode** yourself from the App Store (≈ 15 GB, download it in advance and open it once). Then run `npm run setup` and choose **iOS**. It accepts the Xcode licence (asks for your Mac password), downloads the iOS simulator runtime (≈ 8 GB), creates the two workshop simulators and downloads the iOS demo app (15 MB).
 
 See [docs/xcode-ios.md](docs/xcode-ios.md) for the details and for what to do when something goes wrong.
 
 > [!NOTE]
 > **Known issue with Xcode 27:** a downloaded iOS version can be missing when you add a simulator yourself in Xcode (**Open Developer Tool → Device Hub**), so you cannot create one. `npm run setup` works around this. It may be fixed in a later Xcode version. Details in [docs/xcode-ios.md](docs/xcode-ios.md#known-issue-xcode-27-does-not-list-a-downloaded-ios-version).
 
-**Start the simulators**
+### Start the simulators
 
 Use [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator), it lists your simulators and starts the one you pick:
 
@@ -334,10 +342,11 @@ npm run check
 
 The check only looks, it never changes anything on your machine. It goes through this list and marks each item with ✔ or ✘:
 
-1. **Tools:** Git, Node.js 24+, npm and Visual Studio Code (the `code` command is optional, so a missing one is only a warning ⚠).
-2. **Java and Android:** `JAVA_HOME`, `ANDROID_HOME`, `adb` and `emulator` on your `PATH`, and the two workshop emulators.
-3. **iOS (macOS only):** Xcode, its licence and components, the iOS simulator runtime and the two workshop simulators.
-4. **WebdriverIO session:** the real proof. It starts Appium and runs a small WebdriverIO test that opens the **Settings** app on your emulator/simulator and reads the screen. This is the same thing you do in the first exercise of the workshop. This step is skipped when an earlier item failed, because it cannot work then.
+1. **Your computer:** free disk space, memory and whether the download servers can be reached. Little memory or an unreachable server is only a warning ⚠. Too little free disk space (less than 10 GB) is a ✘.
+2. **Tools:** Git, Node.js 24+, npm and Visual Studio Code (the `code` command is optional, so a missing one is only a warning).
+3. **Java and Android:** `JAVA_HOME`, `ANDROID_HOME`, `adb` and `emulator` on your `PATH`, the two workshop emulators, hardware acceleration (a warning when it is missing) and the Android demo app.
+4. **iOS (macOS only):** Xcode, its licence and components, the iOS simulator runtime, the two workshop simulators and the iOS demo app.
+5. **WebdriverIO session:** the real proof. It starts Appium and runs a small WebdriverIO test that opens the **Settings** app on your emulator/simulator and reads the screen. This is the same thing you do in the first exercise of the workshop. This step is skipped when an earlier item failed, because it cannot work then.
 
 Android and iOS are tested at the same time, each on its own line that updates while it runs. When both are done, the explanation of anything that failed is shown below, with `[Android]` or `[iOS]` in front.
 
@@ -352,7 +361,17 @@ npm run check -- --ios       # only iOS (macOS only)
 
 Fix anything marked with ✘ by running `npm run setup` (open a new terminal afterwards) and run the check again. When everything passes, you are ready for the workshop.
 
-**The Android test fails the first time?** Right after a fresh emulator start, the check can fail with `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL`. These messages mean the connection between your computer and the emulator was not ready yet, nothing is wrong with your setup. The check waits until the emulator is ready and tries once more by itself. If it still fails, run it again, or start the emulator yourself, wait until you see the home screen and run `npm run check -- --android`.
+### Good to know
+
+The check is also a warm-up. The first iOS session builds a helper app (WebDriverAgent) that takes a few minutes, and the first Android session sets up Appium's helper on the emulator. After a passing check these are done and cached, so the first exercise of the workshop starts fast. Run the check a day before the workshop.
+
+### Something fails and you cannot fix it?
+
+When the check fails it saves a report with everything it found (your system, the output above and the Appium log) in `workshop-check-report.txt` in this folder. Send that file to the trainer, the address will be shared by the conference. The file contains paths on your computer (with your user name) and no passwords or tokens. Want a report when everything passes too? Run `npm run check -- --report`.
+
+### The Android test fails the first time?
+
+Right after a fresh emulator start, the check can fail with `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL`. These messages mean the connection between your computer and the emulator was not ready yet, nothing is wrong with your setup. The check waits until the emulator is ready and tries once more by itself. If it still fails, run it again, or start the emulator yourself, wait until you see the home screen and run `npm run check -- --android`.
 
 ---
 
@@ -368,7 +387,23 @@ Run `npm run setup` again first. It re-checks everything and fixes what it can.
 | `adb` or `emulator` not found | Open a **new** terminal after `npm run setup`, then run `npm run setup` again |
 | Download fails or is very slow | Run `npm run setup` again, it starts the missing download from the beginning |
 | `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL` during the check | The emulator was not ready yet. Run `npm run check -- --android` again, see [7. Verify your setup](#7-verify-your-setup) |
+| The check fails and I cannot fix it | Send `workshop-check-report.txt` to the trainer, see [7. Verify your setup](#7-verify-your-setup) |
+| Download fails because of a company firewall or proxy | See [Behind a company proxy](#behind-a-company-proxy-or-firewall) |
 | Xcode issues | [docs/xcode-ios.md](docs/xcode-ios.md) |
+
+### Behind a company proxy or firewall
+
+If your network uses a proxy, set it in your terminal **before** you run the setup or the check, and they will use it for all their downloads (also the Android SDK):
+
+```bash
+# macOS / Linux
+export HTTPS_PROXY=http://proxy.company.com:8080
+
+# Windows PowerShell
+$env:HTTPS_PROXY = "http://proxy.company.com:8080"
+```
+
+`npm run check` tells you at the top which download servers it cannot reach. If the proxy is set and they still fail, ask your IT department to allow them (`dl.google.com`, `android.googlesource.com`, `api.adoptium.net`, `github.com`, `objects.githubusercontent.com` and `registry.npmjs.org`), or use another network, like a phone hotspot. This is not tested with every kind of proxy, so tell us if it does not work for you.
 
 Still stuck? Reach out before the workshop so we can sort it out in advance.
 

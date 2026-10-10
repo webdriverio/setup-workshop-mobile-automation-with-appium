@@ -15,6 +15,10 @@ mock.module('../scripts/lib/android.mjs', {
   namedExports: { ...lib, ANDROID_VERSION: 17, AVD_NAMES, MIN_JAVA: 17, PIXEL_MODEL: 10, REQUIRED_PACKAGES },
 })
 mock.module('../scripts/lib/env.mjs', { namedExports: { persistEnv, applyToProcess } })
+const apps = { hasApp: mock.fn(), downloadApp: mock.fn() }
+mock.module('../scripts/lib/apps.mjs', {
+  namedExports: { ...apps, appsDir: () => '/downloads/appium-workshop-apps', APPS: { android: { size: 123595826 }, ios: { size: 15981903 } } },
+})
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planAndroid, setupAndroid } = await import('../scripts/steps/android.mjs')
 
@@ -31,6 +35,8 @@ const readyMachine = () => {
   lib.sdkTool.mock.mockImplementation(() => '/sdk/cmdline-tools/latest/bin/sdkmanager')
   lib.listInstalledPackages.mock.mockImplementation(() => new Set(REQUIRED_PACKAGES))
   lib.listAvds.mock.mockImplementation(() => AVD_NAMES)
+  apps.hasApp.mock.mockImplementation(() => true)
+  apps.downloadApp.mock.mockImplementation(async () => '/downloads/appium-workshop-apps/app')
   lib.androidEnvGaps.mock.mockImplementation(() => ({ vars: [], pathMissing: false }))
   lib.javaMajor.mock.mockImplementation(() => 21)
   lib.hasSkin.mock.mockImplementation(() => true)
@@ -47,6 +53,7 @@ const emptyMachine = () => {
   lib.detectJava.mock.mockImplementation(() => null)
   lib.sdkTool.mock.mockImplementation(() => null)
   lib.androidEnvGaps.mock.mockImplementation(() => ENV_GAPS)
+  apps.hasApp.mock.mockImplementation(() => false)
 }
 const step = (steps, title) => steps.find((s) => s.title.includes(title))
 const status = (steps) => Object.fromEntries(steps.map((s) => [s.title, s.done]))
@@ -54,7 +61,7 @@ const status = (steps) => Object.fromEntries(steps.map((s) => [s.title, s.done])
 beforeEach(() => {
   output = []
   mock.method(console, 'log', (line) => output.push(line))
-  for (const fn of [...Object.values(lib), persistEnv, applyToProcess]) fn.mock.resetCalls()
+  for (const fn of [...Object.values(lib), ...Object.values(apps), persistEnv, applyToProcess]) fn.mock.resetCalls()
   FLAGS.yes = true
   FLAGS.dryRun = false
   readyMachine()

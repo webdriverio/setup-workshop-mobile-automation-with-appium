@@ -8,10 +8,14 @@ const lib = {
 }
 const NAMES = ['Workshop_1_iPhone_17_Pro_iOS_27_0', 'Workshop_2_iPhone_17_Pro_iOS_27_0']
 mock.module('../scripts/lib/ios.mjs', { namedExports: { ...lib, IPHONE_MODEL: 'iPhone 17 Pro', simulatorNames: () => NAMES } })
+const apps = { hasApp: mock.fn(), downloadApp: mock.fn() }
+mock.module('../scripts/lib/apps.mjs', {
+  namedExports: { ...apps, appsDir: () => '/downloads/appium-workshop-apps', APPS: { android: { size: 123595826 }, ios: { size: 15981903 } } },
+})
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planIos, setupIos } = await import('../scripts/steps/ios.mjs')
 
-const [XCODE, LICENCE, RUNTIME, SIMULATORS] = [0, 1, 2, 3]
+const [XCODE, LICENCE, RUNTIME, SIMULATORS, APP] = [0, 1, 2, 3, 4]
 let output
 
 const readyMachine = () => {
@@ -25,18 +29,21 @@ const readyMachine = () => {
   lib.registerDownloadedRuntime.mock.mockImplementation(() => false)
   lib.listSimulators.mock.mockImplementation(() => NAMES)
   lib.createSimulator.mock.mockImplementation(() => ({ output: '', exitCode: 0 }))
+  apps.hasApp.mock.mockImplementation(() => true)
+  apps.downloadApp.mock.mockImplementation(async () => '/downloads/appium-workshop-apps/app')
 }
 const withoutXcode = () => {
   readyMachine()
   lib.detectXcode.mock.mockImplementation(() => null)
   lib.simulatorSdkVersion.mock.mockImplementation(() => null)
   lib.hasRuntime.mock.mockImplementation(() => false)
+  apps.hasApp.mock.mockImplementation(() => false)
 }
 
 beforeEach(() => {
   output = []
   mock.method(console, 'log', (line) => output.push(line))
-  for (const fn of Object.values(lib)) fn.mock.resetCalls()
+  for (const fn of [...Object.values(lib), ...Object.values(apps)]) fn.mock.resetCalls()
   FLAGS.yes = true
   FLAGS.dryRun = false
   readyMachine()
@@ -170,7 +177,7 @@ test('a dry run changes nothing and says what it would do', async () => {
   for (const fn of [lib.acceptLicenseAndInstallComponents, lib.downloadRuntime, lib.registerDownloadedRuntime, lib.createSimulator]) {
     assert.equal(fn.mock.callCount(), 0)
   }
-  assert.equal(output.filter((line) => line.includes('[dry run]')).length, 3)
+  assert.equal(output.filter((line) => line.includes('[dry run]')).length, 4)
 })
 
 test('setupIos on a ready machine only prints how to start the simulators', async () => {

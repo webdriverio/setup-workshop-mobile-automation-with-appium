@@ -51,6 +51,7 @@ beforeEach(() => {
   delete process.env.JAVA_HOME
   delete process.env.ANDROID_HOME
   delete process.env.ANDROID_SDK_ROOT
+  for (const name of ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy']) delete process.env[name]
 })
 afterEach(() => {
   mock.restoreAll()
@@ -234,6 +235,17 @@ test('installPackages installs the given packages and shows the progress', skipO
   assert.equal(options.inherit, true)
   runFile.mock.mockImplementation(() => result('', 1))
   assert.equal(android.installPackages(sdk, '/jdk', ['emulator']), false)
+})
+
+test('the SDK manager gets the proxy from the environment as options', skipOnWindows, () => {
+  const sdk = fakeSdk('proxy-sdk')
+  runFile.mock.mockImplementation(() => result())
+  process.env.HTTPS_PROXY = 'http://proxy.company.com:8080'
+  android.installPackages(sdk, '/jdk', ['emulator'])
+  android.acceptLicenses(sdk, '/jdk')
+  const proxy = ['--proxy=http', '--proxy_host=proxy.company.com', '--proxy_port=8080']
+  assert.deepEqual(runFile.mock.calls[0].arguments[1], [`--sdk_root=${sdk}`, ...proxy, '--install', 'emulator'])
+  assert.deepEqual(runFile.mock.calls[1].arguments[1], [`--sdk_root=${sdk}`, ...proxy, '--licenses'])
 })
 
 test('listAvds returns emulator names and ignores warning lines', skipOnWindows, () => {

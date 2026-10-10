@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { AVD_NAMES, MIN_JAVA, androidEnvGaps, detectJava, detectSdkPath, javaMajor, platformToolsDirs } from '../lib/android.mjs'
 import { applyToProcess } from '../lib/env.mjs'
 import { run } from '../lib/shell.mjs'
-import { fail, info, ok } from '../lib/ui.mjs'
+import { fail, info, ok, warn } from '../lib/ui.mjs'
 
 /** Read-only checks for Android. Fixing is the job of `npm run setup`, so every failure points there. */
 
@@ -83,4 +83,16 @@ export function checkEmulators() {
   if (avds.length > 0) info(`Other emulators on this machine: ${avds.join(', ')}`)
   info('Run: npm run setup')
   return false
+}
+
+/** Emulators are far too slow without hardware acceleration. Only a warning: some setups work in a way we cannot see. */
+export function checkAcceleration() {
+  if (run('emulator -accel-check') !== null) {
+    ok('Hardware acceleration for the emulator')
+    return true
+  }
+  warn('The emulator reports that hardware acceleration is not available, emulators will be very slow')
+  info('Windows: turn on Windows Hypervisor Platform. Linux: install KVM and add yourself to the kvm group. See the README, step 2.')
+  info('Check it yourself with: emulator -accel-check')
+  return true
 }
