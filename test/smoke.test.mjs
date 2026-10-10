@@ -76,6 +76,8 @@ test('an emulator is started when none runs, and the caller can stop it afterwar
     if (cmd === 'adb devices') return ++adbCalls < 3 ? 'List of devices attached\n' : ADB_ONE
     if (cmd === 'adb -s emulator-5554 shell getprop sys.boot_completed') return adbCalls < 4 ? '' : '1'
     if (cmd === 'adb -s emulator-5554 shell getprop init.svc.bootanim') return 'stopped'
+    if (cmd === 'adb -s emulator-5554 shell pm path com.android.settings') return 'package:/system/priv-app/Settings/Settings.apk'
+    if (cmd === 'adb -s emulator-5554 forward tcp:0 tcp:6790') return '41234'
   })
   const device = await smoke.ensureAndroidDevice({ onStatus: (m) => statuses.push(m) })
   assert.equal(device.udid, 'emulator-5554')
@@ -84,6 +86,24 @@ test('an emulator is started when none runs, and the caller can stop it afterwar
   assert.match(statuses[0], /Workshop_2/)
   device.stop()
   assert.deepEqual(runFile.mock.calls[0].arguments, ['adb', ['-s', 'emulator-5554', 'emu', 'kill']])
+})
+
+test('androidReady only says yes when the emulator accepts the port forwarding of the driver', () => {
+  const answers = { boot: '1', anim: 'stopped', pm: 'package:/x', forward: '41234' }
+  run.mock.mockImplementation((cmd) => ({
+    'adb -s e shell getprop sys.boot_completed': answers.boot,
+    'adb -s e shell getprop init.svc.bootanim': answers.anim,
+    'adb -s e shell pm path com.android.settings': answers.pm,
+    'adb -s e forward tcp:0 tcp:6790': answers.forward,
+  })[cmd] ?? null)
+  assert.equal(smoke.androidReady('e'), true)
+  assert.equal(run.mock.calls.at(-1).arguments[0], 'adb -s e forward --remove tcp:41234') // leave nothing behind
+  for (const [key, bad] of [['boot', ''], ['anim', 'running'], ['pm', null], ['forward', null]]) {
+    const saved = answers[key]
+    answers[key] = bad
+    assert.equal(smoke.androidReady('e'), false, key)
+    answers[key] = saved
+  }
 })
 
 test('giving up on an emulator that never finishes booting', async () => {
@@ -205,6 +225,9 @@ test('runSmokeTest tries once more with a new port when the first port was taken
 test('runSmokeTest gives up after the second try, and does not retry other failures', async () => {
   let seen = fakeRunner({ output: 'EADDRINUSE', exitCode: 1 })
   assert.equal((await smoke.runSmokeTest({ platform: 'android', udid: 'e' })).passed, false)
+  assert.equal(seen.length, 2)
+  seen = fakeRunner({ output: 'Cannot find any free port in range 8200..8299', exitCode: 1 }, { output: 'PASSED' })
+  assert.equal((await smoke.runSmokeTest({ platform: 'android', udid: 'e' })).passed, true)
   assert.equal(seen.length, 2)
   seen = fakeRunner({ output: 'Error: no such app', exitCode: 1 })
   assert.equal((await smoke.runSmokeTest({ platform: 'android', udid: 'e' })).passed, false)

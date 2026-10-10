@@ -1,8 +1,9 @@
+import { spawnSync } from 'node:child_process'
 import { select } from '@inquirer/prompts'
 import { setupAndroid } from './steps/android.mjs'
 import { setupIos } from './steps/ios.mjs'
-import { IS_MAC } from './lib/shell.mjs'
-import { FLAGS, bold, info, warn } from './lib/ui.mjs'
+import { IS_MAC, IS_WIN } from './lib/shell.mjs'
+import { FLAGS, ask, bold, info, warn } from './lib/ui.mjs'
 
 const PLATFORMS = {
   android: setupAndroid,
@@ -37,10 +38,25 @@ export async function runWizard() {
   }
 
   console.log('\n' + '─'.repeat(50))
-  if (Object.values(results).includes(false)) {
-    console.log(`\nSome things still need your attention. Run ${bold('npm run setup')} again after fixing them.\n`)
-    return 1
+  const needsAttention = Object.values(results).includes(false)
+  if (needsAttention) {
+    console.log(`\nSome things still need your attention. Run ${bold('npm run setup')} again after fixing them.`)
+  } else {
+    console.log(`\nSetup finished.`)
   }
-  console.log(`\nSetup finished. Next: ${bold('npm run check')}\n`)
-  return 0
+
+  // Once a platform is ready, prove that it works by running the check (it opens a real session)
+  if (!FLAGS.dryRun && Object.values(results).includes(true)) {
+    console.log()
+    if (await ask(`Run ${bold('npm run check')} now to test your setup?`)) {
+      console.log()
+      const checkFailed = spawnSync('npm', ['run', 'check'], { stdio: 'inherit', shell: IS_WIN }).status !== 0
+      return needsAttention || checkFailed ? 1 : 0
+    }
+    console.log(`\nYou can run it later with ${bold('npm run check')}.`)
+  } else if (!needsAttention) {
+    console.log(`Next: ${bold('npm run check')}`)
+  }
+  console.log()
+  return needsAttention ? 1 : 0
 }

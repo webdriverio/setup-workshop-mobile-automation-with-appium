@@ -634,8 +634,10 @@ if (hasErrors) {
   warn('Skipped, fix the items marked with ✘ above first.')
 } else {
   await check('WebdriverIO session', async () => {
-    await smokeTest('Android', ensureAndroidDevice)
-    if (IS_MAC) await smokeTest('iOS', ensureIosDevice)
+    // `npm run check -- --android` or `-- --ios` tests only one platform
+    const only = ['--android', '--ios'].find((flag) => process.argv.includes(flag))
+    if (only !== '--ios') await smokeTest('Android', ensureAndroidDevice)
+    if (IS_MAC && only !== '--android') await smokeTest('iOS', ensureIosDevice)
   })
 }
 

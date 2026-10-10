@@ -2,12 +2,15 @@ import assert from 'node:assert/strict'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
 const select = mock.fn()
+const confirm = mock.fn(async () => true)
+const spawnSync = mock.fn(() => ({ status: 0 }))
 const setupAndroid = mock.fn(async () => true)
 const setupIos = mock.fn(async () => true)
-mock.module('@inquirer/prompts', { namedExports: { select, confirm: mock.fn() } })
+mock.module('@inquirer/prompts', { namedExports: { select, confirm } })
+mock.module('node:child_process', { namedExports: { spawnSync } })
 mock.module('../scripts/steps/android.mjs', { namedExports: { setupAndroid } })
 mock.module('../scripts/steps/ios.mjs', { namedExports: { setupIos } })
-mock.module('../scripts/lib/shell.mjs', { namedExports: { IS_MAC: true } })
+mock.module('../scripts/lib/shell.mjs', { namedExports: { IS_MAC: true, IS_WIN: false } })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { runWizard } = await import('../scripts/wizard.mjs')
 
@@ -15,8 +18,10 @@ const answers = (...values) => select.mock.mockImplementation(async () => values
 let output
 beforeEach(() => {
   output = []
-  mock.method(console, 'log', (line) => output.push(line))
-  for (const fn of [select, setupAndroid, setupIos]) fn.mock.resetCalls()
+  mock.method(console, 'log', (line = '') => output.push(line))
+  for (const fn of [select, confirm, spawnSync, setupAndroid, setupIos]) fn.mock.resetCalls()
+  confirm.mock.mockImplementation(async () => true)
+  spawnSync.mock.mockImplementation(() => ({ status: 0 }))
   setupAndroid.mock.mockImplementation(async () => true)
   setupIos.mock.mockImplementation(async () => true)
   FLAGS.yes = false
@@ -61,4 +66,55 @@ test('a dry run says that nothing is changed', async () => {
   answers('finish')
   await runWizard()
   assert.ok(output.some((line) => line.includes('Dry run')))
+})
+
+test('when a platform is ready the wizard offers to run the check and runs it', async () => {
+  answers('android', 'finish')
+  assert.equal(await runWizard(), 0)
+  assert.equal(confirm.mock.callCount(), 1)
+  assert.deepEqual(spawnSync.mock.calls[0].arguments.slice(0, 2), ['npm', ['run', 'check']])
+  assert.equal(spawnSync.mock.calls[0].arguments[2].stdio, 'inherit') // so the attendee sees the output
+})
+
+test('--yes runs the check without asking', async () => {
+  FLAGS.yes = true
+  await runWizard()
+  assert.equal(confirm.mock.callCount(), 0)
+  assert.equal(spawnSync.mock.callCount(), 1)
+})
+
+test('the check is skipped when the attendee says no, and the wizard points to it', async () => {
+  confirm.mock.mockImplementation(async () => false)
+  answers('android', 'finish')
+  assert.equal(await runWizard(), 0)
+  assert.equal(spawnSync.mock.callCount(), 0)
+  assert.ok(output.some((line) => line.includes('run it later')))
+})
+
+test('a failing check makes the wizard exit with code 1', async () => {
+  spawnSync.mock.mockImplementation(() => ({ status: 1 }))
+  answers('android', 'finish')
+  assert.equal(await runWizard(), 1)
+})
+
+test('the check is still offered when only one of the platforms is ready', async () => {
+  setupIos.mock.mockImplementation(async () => false)
+  answers('android', 'ios', 'finish')
+  assert.equal(await runWizard(), 1)
+  assert.equal(spawnSync.mock.callCount(), 1)
+})
+
+test('no check when no platform is ready, in a dry run, or when nothing was chosen', async () => {
+  setupAndroid.mock.mockImplementation(async () => false)
+  answers('android', 'finish')
+  assert.equal(await runWizard(), 1)
+  FLAGS.dryRun = true
+  answers('android', 'finish')
+  await runWizard()
+  FLAGS.dryRun = false
+  answers('finish')
+  assert.equal(await runWizard(), 0)
+  assert.ok(output.some((line) => line.includes('Next:')))
+  assert.equal(spawnSync.mock.callCount(), 0)
+  assert.equal(confirm.mock.callCount(), 0)
 })

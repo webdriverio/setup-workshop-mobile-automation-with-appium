@@ -326,13 +326,26 @@ xcrun simctl list devices | grep Booted
 
 ## 7. Verify your setup
 
+At the end of `npm run setup` you are asked if you want to run the check. You can also run it yourself at any time:
+
 ```bash
 npm run check
 ```
 
-The script checks each tool and tells you exactly what is working and what isn't. Fix anything marked with ✘ before the workshop. Warnings (⚠) are fine to leave.
+The script checks each tool and tells you exactly what is working and what isn't. The last step is the real proof: it starts Appium and runs a small WebdriverIO test that opens the **Settings** app on your emulator/simulator and reads the screen. This is the same thing you do in the first exercise of the workshop.
 
-> **TODO (Wim):** this describes the old check. The new `check` will end with a small WebdriverIO test that starts Appium and opens a session on your emulator/simulator, which is the real proof that everything works. That isn't built yet. When it is, this section and the example output need to be replaced. The old example output is gone because it showed Android Studio and API 36.
+If no emulator or simulator is running, the check starts one for you (this takes a minute or two) and closes it again when it is done. One that you started yourself is left open.
+
+To test only one platform:
+
+```bash
+npm run check -- --android   # only the Android emulator
+npm run check -- --ios       # only the iOS simulator (macOS only)
+```
+
+Fix anything marked with ✘ before the workshop. Warnings (⚠) are fine to leave.
+
+**The Android test fails the first time?** Right after a fresh emulator start, the check can fail with `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL`. These messages mean the connection between your computer and the emulator was not ready yet, nothing is wrong with your setup. The check waits until the emulator is ready and tries once more by itself. If it still fails, run it again, or start the emulator yourself, wait until you see the home screen and run `npm run check -- --android`.
 
 ---
 
@@ -347,6 +360,7 @@ Run `npm run setup` again first. It re-checks everything and fixes what it can.
 | `code` command not working | [docs/vscode.md](docs/vscode.md) |
 | `adb` or `emulator` not found | Open a **new** terminal after `npm run setup`, then run `npm run setup` again |
 | Download fails or is very slow | Run `npm run setup` again, it starts the missing download from the beginning |
+| `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL` during the check | The emulator was not ready yet. Run `npm run check -- --android` again, see [7. Verify your setup](#7-verify-your-setup) |
 | Emulator won't start | **TODO (Wim):** needs a troubleshooting page. The old Android Studio guide is gone |
 | Xcode issues | [docs/xcode-ios.md](docs/xcode-ios.md) |
 

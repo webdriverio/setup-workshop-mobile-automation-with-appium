@@ -35,6 +35,20 @@ export function pickAvd(avds) {
 }
 
 /**
+ * "Booted" is not enough: right after the boot message the emulator still refuses the port forwarding that the Appium driver
+ * needs ("Cannot find any free port"). So check the boot, the Settings app and a real forward.
+ */
+export function androidReady(udid) {
+  const adb = (cmd) => run(`adb -s ${udid} ${cmd}`)
+  if (adb('shell getprop sys.boot_completed') !== '1' || adb('shell getprop init.svc.bootanim') !== 'stopped') return false
+  if (!adb('shell pm path com.android.settings')?.startsWith('package:')) return false
+  const port = adb('forward tcp:0 tcp:6790')
+  if (!port) return false
+  adb(`forward --remove tcp:${port}`)
+  return true
+}
+
+/**
  * Returns a running Android emulator, starting one when there is none.
  * `stop` is only set when we started it ourselves: an emulator the attendee already had open is left alone.
  */
@@ -52,7 +66,7 @@ export async function ensureAndroidDevice({ onStatus = () => {} } = {}) {
   while (Date.now() < deadline) {
     await sleep(3000)
     const udid = parseAdbDevices(run('adb devices'))[0]
-    if (udid && run(`adb -s ${udid} shell getprop sys.boot_completed`) === '1' && run(`adb -s ${udid} shell getprop init.svc.bootanim`) === 'stopped') {
+    if (udid && androidReady(udid)) {
       return { udid, stop: () => runFile('adb', ['-s', udid, 'emu', 'kill']) }
     }
   }
@@ -113,7 +127,7 @@ export async function runSmokeTest({ platform, udid }) {
   return result
 }
 
-const PORT_PROBLEM = /Unable to connect|EADDRNOTAVAIL|EADDRINUSE/
+const PORT_PROBLEM = /Unable to connect|EADDRNOTAVAIL|EADDRINUSE|Cannot find any free port/
 
 async function runOnce({ platform, udid }) {
   const port = await freePort()
