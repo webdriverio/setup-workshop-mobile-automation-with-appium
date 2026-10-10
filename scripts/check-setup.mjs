@@ -12,6 +12,7 @@ import { existsSync, appendFileSync } from 'node:fs'
 import { platform, homedir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline/promises'
+import { detectJava } from './lib/android.mjs'
 
 const IS_MAC = platform() === 'darwin'
 const IS_WIN = platform() === 'win32'
@@ -118,12 +119,12 @@ await check('Node.js', () => {
   const match = version.match(/v(\d+)/)
   const major = match ? parseInt(match[1], 10) : 0
 
-  if (major >= 20) {
+  if (major >= 24) {
     ok(`node ${version}`)
   } else {
-    fail(`node ${version} is too old, need v20 or later (even versions only: 22, 24, ...)`)
+    fail(`node ${version} is too old, need v24`)
     hasErrors = true
-    info('Run: nvm install --lts && nvm use --lts')
+    info('Run: nvm install 24 && nvm alias default 24 && nvm use 24')
   }
 })
 
@@ -323,8 +324,7 @@ await check('ANDROID_HOME', async () => {
   if (!detected) {
     fail('ANDROID_HOME is not set and the Android SDK could not be found in the default location')
     hasErrors = true
-    info('Make sure Android Studio is installed and has downloaded the SDK.')
-    info('See docs/android-studio.md for setup instructions.')
+    info('Run: npm run setup')
     return
   }
 
@@ -371,7 +371,7 @@ await check('adb', async () => {
   if (home) {
     info(`Expected location: ${join(home, 'platform-tools')}`)
   }
-  info('Re-run this check after opening a new terminal, or follow docs/android-studio.md')
+  info('Run `npm run setup`, open a new terminal, then re-run this check.')
 })
 
 await check('Android emulator', async () => {
@@ -391,8 +391,7 @@ await check('Android emulator', async () => {
         if (avds.length === 0) {
           fail('No Android Virtual Devices (AVDs) found')
           hasErrors = true
-          info('Create one in Android Studio → Device Manager')
-          info('See docs/android-studio.md → "Create an Android Virtual Device"')
+          info('Run: npm run setup')
         } else {
           ok('Android emulator found. Available AVDs:')
           avds.forEach((avd) => info(avd))
@@ -408,7 +407,7 @@ await check('Android emulator', async () => {
     if (home) {
       info(`Expected location: ${join(home, 'emulator')}`)
     }
-    info('Re-run this check after opening a new terminal, or follow docs/android-studio.md')
+    info('Run `npm run setup`, open a new terminal, then re-run this check.')
     return
   }
 
@@ -416,8 +415,7 @@ await check('Android emulator', async () => {
   if (avds.length === 0) {
     fail('No Android Virtual Devices (AVDs) found')
     hasErrors = true
-    info('Create one in Android Studio → Device Manager')
-    info('See docs/android-studio.md → "Create an Android Virtual Device"')
+    info('Run: npm run setup')
   } else {
     ok('Android emulator found. Available AVDs:')
     avds.forEach((avd) => info(avd))
@@ -438,53 +436,8 @@ await check('running devices', () => {
 
 // ── Java ──────────────────────────────────────────────────────────────────────
 
-function detectAndroidStudioPath() {
-  const candidates = IS_MAC
-    ? ['/Applications/Android Studio.app']
-    : IS_WIN
-      ? [
-          join(process.env['ProgramFiles'] || 'C:\\Program Files', 'Android', 'Android Studio'),
-          join(process.env.LOCALAPPDATA || homedir(), 'Programs', 'Android Studio'),
-        ]
-      : [
-          '/opt/android-studio',
-          join(homedir(), 'android-studio'),
-          '/snap/android-studio/current',
-        ]
-  return candidates.find(existsSync) || null
-}
-
 function detectJavaHome() {
-  // Derive JBR from the Android Studio installation, it's always present if Studio is installed
-  const studioPath = detectAndroidStudioPath()
-  if (studioPath) {
-    const jbrPath = IS_MAC
-      ? join(studioPath, 'Contents', 'jbr', 'Contents', 'Home')
-      : join(studioPath, 'jbr')
-    if (existsSync(join(jbrPath, 'bin', IS_WIN ? 'java.exe' : 'java'))) return jbrPath
-  }
-
-  // macOS system Java
-  if (IS_MAC) {
-    const detected = run('/usr/libexec/java_home 2>/dev/null')
-    if (detected && existsSync(join(detected, 'bin', 'java'))) return detected
-  }
-
-  // Linux common locations
-  if (!IS_WIN && !IS_MAC) {
-    const candidates = [
-      '/usr/lib/jvm/java-17-openjdk-amd64',
-      '/usr/lib/jvm/java-17-openjdk',
-      '/usr/lib/jvm/java-21-openjdk-amd64',
-      '/usr/lib/jvm/java-21-openjdk',
-      '/usr/lib/jvm/temurin-17',
-    ]
-    for (const p of candidates) {
-      if (existsSync(join(p, 'bin', 'java'))) return p
-    }
-  }
-
-  return null
+  return detectJava()?.home ?? null
 }
 
 function showJavaManualInstructions(javaHome) {
@@ -552,9 +505,7 @@ await check('JAVA_HOME', async () => {
   if (!detected) {
     fail('JAVA_HOME is not set and Java could not be found automatically')
     hasErrors = true
-    info('Appium needs Java. The easiest source is Android Studio\'s bundled JDK.')
-    info('In Android Studio: Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK')
-    info('Or install Java from https://adoptium.net')
+    info('Appium needs Java 17+. Run: npm run setup')
     return
   }
 

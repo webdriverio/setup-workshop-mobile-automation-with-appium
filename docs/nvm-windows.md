@@ -1,71 +1,47 @@
 # Installing Node.js with NVM on Windows
 
-On Windows we use **nvm-windows**, a separate tool that gives you the same workflow as NVM on Mac/Linux. It installs and manages Node.js for you and avoids permission issues.
+On Windows we use **nvm-windows**, a separate tool that gives you the same workflow as NVM on Mac/Linux. It installs and manages Node.js for you and avoids permission issues. We use version 2 of nvm-windows.
+
+> [!TIP]
+> **Already have nvm-windows?** Skip step 1. Step 2 will download Node.js 24 if you don't have it yet and set it as your default. Other Node.js versions you installed stay available, switch with `nvm use <version>`.
 
 ## 1. Install nvm-windows
 
-Pick whichever option works best for you.
-
-<details>
-<summary><strong>Option A, installer</strong></summary>
-
-1. Go to the [nvm-windows releases page](https://github.com/coreybutler/nvm-windows/releases/latest).
-2. Look for the **Assets** section and download **`nvm-setup.exe`**.
-3. Run the installer. Click through with all default options, they're fine.
+1. Go to the [nvm-windows releases page](https://github.com/nvm-windows/nvm/releases/latest).
+2. In the **Assets** section, download **`nvm-<version>-x64-setup.exe`**. On an ARM laptop, download **`nvm-<version>-arm64-setup.exe`** instead.
+3. Double-click the installer to run it. Do **not** right-click and choose "Run as administrator", that would set up nvm-windows for the administrator account instead of yours. If Windows asks for permission, click **Yes**. Click through with all default options, they're fine.
 4. At the end, click **Finish**.
-
-</details>
-
-<details>
-<summary><strong>Option B, winget</strong></summary>
-
-winget is the Windows Package Manager, built into Windows 10 (1709+) and Windows 11. Open PowerShell and run:
-
-```powershell
-winget install CoreyButler.NVMforWindows
-```
-
-</details>
-
-<details>
-<summary><strong>Option C, Chocolatey</strong></summary>
-
-If you already have [Chocolatey](https://chocolatey.org) installed, open PowerShell as Administrator and run:
-
-```powershell
-choco install nvm
-```
-
-</details>
 
 > [!IMPORTANT]
 > Always open a **new** terminal window after installation. Existing windows won't see nvm-windows yet.
 
+> [!NOTE]
+> **Why not winget or Chocolatey?** Both still install the old nvm-windows 1.x. Use the installer above. If you already have nvm-windows 1.x, running the installer upgrades it to 2.x for you.
+
 Open a new PowerShell window and verify:
 
 ```powershell
-nvm version
+nvm list
 ```
 
-You should see a version number like `1.1.12`. If you see `nvm is not recognized`, see the troubleshooting section below.
+If you see a list (it may be empty), nvm-windows works. If you see `nvm is not recognized`, see the troubleshooting section below.
 
-## 2. Install Node.js
+## 2. Install Node.js 24
 
-Install the latest LTS (Long Term Support) version of Node.js. LTS versions are more stable and are a better choice for day-to-day work.
+Install Node.js 24 and switch to it. Node.js 24 is the LTS (Long Term Support) version, which is more stable and gets security updates for longer. `nvm use` also makes it your default, so every new terminal uses it.
 
 ```powershell
-nvm install lts
-nvm use lts
+nvm install 24
+nvm use 24
 ```
 
-> [!NOTE]
-> If you get an "Access denied" error when running `nvm use lts`, right-click on PowerShell in the Start menu and choose **Run as Administrator**. Run `nvm use lts` once as Administrator. After that, you can go back to a normal terminal.
 
 Verify it worked:
 
 ```powershell
-node --version   # should print something like v22.x.x
-npm --version    # should print something like 10.x.x
+node --version   # should print v24.x.x
+npm --version    # should print something like 11.x.x
+nvm default      # should show v24.x.x
 ```
 
 If you see version numbers, you're done.
@@ -74,8 +50,8 @@ If you see version numbers, you're done.
 
 - **`nvm is not recognized`**: make sure you opened a **new** terminal window after installation. Existing windows won't see the new tool.
 
-- **"Access denied" when running `nvm use`**: run PowerShell as Administrator for this one command. Right-click PowerShell → **Run as Administrator**, run `nvm use lts`, then close it. You can use a normal terminal after this.
+- **`node --version` doesn't show v24 after `nvm use 24`**: if you previously installed Node.js directly (not via nvm-windows), uninstall it first through **Settings → Apps**, then open a new terminal and run `nvm use 24` again. Having both can cause conflicts.
 
-- **Antivirus software blocks the install**: some antivirus tools flag nvm-windows because it creates symbolic links (shortcuts) between folders. You may need to temporarily disable real-time protection during the `nvm use lts` step. Re-enable it right after.
+- **Antivirus software blocks the install**: some antivirus tools block unknown installers. You may need to temporarily disable real-time protection during the installation. Re-enable it right after.
 
-- **Multiple Node.js versions causing confusion**: if you previously installed Node.js directly (not via nvm-windows), uninstall it first through **Settings → Apps** before using nvm-windows. Having both can cause conflicts.
+- **Installed as Administrator by mistake**: nvm-windows is then set up for the administrator account, not yours. Uninstall it through **Settings → Apps**, then run the installer again as a normal user.
