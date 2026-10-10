@@ -1,7 +1,7 @@
-import { existsSync } from 'node:fs'
 import { AVD_NAMES, MIN_JAVA, androidEnvGaps, detectJava, detectSdkPath, javaMajor, platformToolsDirs } from '../lib/android.mjs'
 import { applyToProcess } from '../lib/env.mjs'
 import { run } from '../lib/shell.mjs'
+import { fileExists } from '../lib/system.mjs'
 import { fail, info, ok, warn } from '../lib/ui.mjs'
 
 /** Read-only checks for Android. Fixing is the job of `npm run setup`, so every failure points there. */
@@ -36,7 +36,7 @@ export function checkAndroidSdk() {
     fail(sdk ? `ANDROID_HOME is not set, but an Android SDK exists at ${sdk}` : 'ANDROID_HOME is not set and no Android SDK was found')
     info(FIX)
     passed = false
-  } else if (!existsSync(home)) {
+  } else if (!fileExists(home)) {
     fail(`ANDROID_HOME is set to "${home}" but that folder does not exist`)
     info(FIX)
     passed = false

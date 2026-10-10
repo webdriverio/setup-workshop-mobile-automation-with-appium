@@ -18,6 +18,7 @@ const MODULES = [
   { module: 'scripts/lib/report.mjs', tests: ['report'] },
   { module: 'scripts/lib/network.mjs', tests: ['network'] },
   { module: 'scripts/lib/apps.mjs', tests: ['apps', 'apps-windows'] },
+  { module: 'scripts/lib/system.mjs', tests: ['system'] },
   { module: 'scripts/lib/plan.mjs', tests: ['plan'] },
   { module: 'scripts/lib/download.mjs', tests: ['download'] },
   { module: 'scripts/lib/env.mjs', tests: ['env', 'env-windows'] },

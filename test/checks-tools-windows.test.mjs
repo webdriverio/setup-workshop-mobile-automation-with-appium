@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict'
-import * as fs from 'node:fs'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
 const run = mock.fn(() => null)
-const existsSync = mock.fn(() => false)
-mock.module('node:fs', { namedExports: { ...fs, existsSync } })
+const fileExists = mock.fn(() => false)
+mock.module('../scripts/lib/system.mjs', { namedExports: { fileExists } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run, IS_MAC: false, IS_WIN: true } })
 const { checkGit, checkVsCode } = await import('../scripts/checks/tools.mjs')
 

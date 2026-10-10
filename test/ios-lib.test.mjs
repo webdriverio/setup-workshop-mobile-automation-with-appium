@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { join } from 'node:path'
 import { beforeEach, mock, test } from 'node:test'
 
 const run = mock.fn()
@@ -120,9 +121,9 @@ test('registerDownloadedRuntime adds the .dmg of a downloaded but unregistered r
   readdirSync.mock.mockImplementation(() => ['Firmware', 'Restore.plist', '043-70362-657.dmg'])
 
   assert.equal(ios.registerDownloadedRuntime('27.0'), true)
-  assert.equal(readdirSync.mock.calls[0].arguments[0], '/assets/x.asset/AssetData/Restore')
+  assert.equal(readdirSync.mock.calls[0].arguments[0], join('/assets/x.asset/AssetData/Restore'))
   const add = runFile.mock.calls.find((c) => c.arguments[1].includes('add'))
-  assert.deepEqual(add.arguments[1], ['simctl', 'runtime', 'add', '/assets/x.asset/AssetData/Restore/043-70362-657.dmg'])
+  assert.deepEqual(add.arguments[1], ['simctl', 'runtime', 'add', join('/assets/x.asset/AssetData/Restore', '043-70362-657.dmg')])
 })
 
 test('registerDownloadedRuntime leaves alone what it should not touch', () => {

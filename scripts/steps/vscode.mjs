@@ -1,14 +1,14 @@
-import { existsSync } from 'node:fs'
 import { applyToProcess, persistEnv } from '../lib/env.mjs'
 import { dry, runPlan } from '../lib/plan.mjs'
 import { run } from '../lib/shell.mjs'
+import { fileExists } from '../lib/system.mjs'
 import { FLAGS, fail, header, info, ok, warn } from '../lib/ui.mjs'
 
 // macOS only: the VS Code installer does not add the `code` command there. On Windows and Linux it comes with the installer.
 export const VSCODE_MAC_BIN = '/Applications/Visual Studio Code.app/Contents/Resources/app/bin'
 
 /** True when VS Code is installed but the `code` command is not available yet. */
-export const needsCodeCommand = () => existsSync(VSCODE_MAC_BIN) && !run('code --version')
+export const needsCodeCommand = () => fileExists(VSCODE_MAC_BIN) && !run('code --version')
 
 export function planVscode() {
   return [

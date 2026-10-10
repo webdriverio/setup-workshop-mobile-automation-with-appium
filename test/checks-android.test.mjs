@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import * as fs from 'node:fs'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
 const lib = {
@@ -7,9 +6,9 @@ const lib = {
 }
 const applyToProcess = mock.fn()
 const run = mock.fn()
-const existsSync = mock.fn()
+const fileExists = mock.fn()
 const AVD_NAMES = ['Workshop_1', 'Workshop_2']
-mock.module('node:fs', { namedExports: { ...fs, existsSync } })
+mock.module('../scripts/lib/system.mjs', { namedExports: { fileExists } })
 mock.module('../scripts/lib/android.mjs', { namedExports: { ...lib, AVD_NAMES, MIN_JAVA: 17 } })
 mock.module('../scripts/lib/env.mjs', { namedExports: { applyToProcess } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run } })
@@ -28,7 +27,7 @@ beforeEach(() => {
   lib.detectSdkPath.mock.mockImplementation(() => '/sdk')
   lib.javaMajor.mock.mockImplementation(() => 21)
   lib.platformToolsDirs.mock.mockImplementation((sdk) => [`${sdk}/platform-tools`, `${sdk}/emulator`])
-  existsSync.mock.mockImplementation(() => true)
+  fileExists.mock.mockImplementation(() => true)
   run.mock.mockImplementation(() => 'Android Debug Bridge version 1.0.41\nmore')
   Object.assign(process.env, { ANDROID_HOME: '/sdk', JAVA_HOME: '/jdk' })
 })
@@ -97,7 +96,7 @@ test('an unset ANDROID_HOME without any SDK says so and has nothing to fall back
 })
 
 test('an ANDROID_HOME that points nowhere fails', () => {
-  existsSync.mock.mockImplementation(() => false)
+  fileExists.mock.mockImplementation(() => false)
   assert.equal(checkAndroidSdk(), false)
   assert.match(text(), /that folder does not exist/)
 })

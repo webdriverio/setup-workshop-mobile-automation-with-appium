@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict'
-import * as fs from 'node:fs'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
-const existsSync = mock.fn()
+const fileExists = mock.fn()
 const run = mock.fn()
 const persistEnv = mock.fn(() => '~/.zshrc')
 const applyToProcess = mock.fn()
-mock.module('node:fs', { namedExports: { ...fs, existsSync } })
+mock.module('../scripts/lib/system.mjs', { namedExports: { fileExists } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run } })
 mock.module('../scripts/lib/env.mjs', { namedExports: { persistEnv, applyToProcess } })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
@@ -18,7 +17,7 @@ beforeEach(() => {
   mock.method(console, 'log', (line = '') => output.push(line))
   for (const fn of [persistEnv, applyToProcess]) fn.mock.resetCalls()
   persistEnv.mock.mockImplementation(() => '~/.zshrc')
-  existsSync.mock.mockImplementation(() => true)
+  fileExists.mock.mockImplementation(() => true)
   run.mock.mockImplementation(() => null)
   FLAGS.yes = true
   FLAGS.dryRun = false
@@ -30,7 +29,7 @@ test('the code command is needed when VS Code is installed and code does not wor
   run.mock.mockImplementation(() => '1.100.0')
   assert.equal(needsCodeCommand(), false)
   run.mock.mockImplementation(() => null)
-  existsSync.mock.mockImplementation(() => false)
+  fileExists.mock.mockImplementation(() => false)
   assert.equal(needsCodeCommand(), false)
 })
 

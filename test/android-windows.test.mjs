@@ -15,6 +15,7 @@ mock.module('../scripts/lib/download.mjs', { namedExports: { download, extractAr
 const root = mkdtempSync(join(tmpdir(), 'workshop-android-win-'))
 const savedEnv = { ...process.env }
 process.env.HOME = join(root, 'home')
+process.env.USERPROFILE = process.env.HOME // Windows reads the home folder from here
 const android = await import('../scripts/lib/android.mjs')
 
 const touch = (file) => {
@@ -31,7 +32,7 @@ test('the SDK lives in LOCALAPPDATA\\Android\\Sdk, or in the home folder without
   process.env.LOCALAPPDATA = join(root, 'local')
   assert.equal(android.defaultSdkPath(), join(root, 'local', 'Android', 'Sdk'))
   delete process.env.LOCALAPPDATA
-  assert.equal(android.defaultSdkPath(), join(process.env.HOME, 'Android', 'Sdk'))
+  assert.equal(android.defaultSdkPath(), join(process.env.USERPROFILE, 'Android', 'Sdk'))
 })
 
 test('Java is java.exe, directly in the JDK folder (no Contents/Home like on a Mac)', async () => {
@@ -44,7 +45,7 @@ test('Java is java.exe, directly in the JDK folder (no Contents/Home like on a M
   const home = await android.installJdk()
   assert.match(download.mock.calls[0].arguments[0], /\/ga\/windows\//)
   assert.match(download.mock.calls[0].arguments[1], /temurin-21\.zip$/)
-  assert.equal(home, join(process.env.HOME, '.jdks', 'temurin-21', 'jdk-21.0.2+13'))
+  assert.equal(home, join(process.env.USERPROFILE, '.jdks', 'temurin-21', 'jdk-21.0.2+13'))
 })
 
 test('the SDK tools are .bat files', () => {

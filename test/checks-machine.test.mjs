@@ -1,15 +1,12 @@
 import assert from 'node:assert/strict'
-import * as fsp from 'node:fs/promises'
-import * as os from 'node:os'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
 const GiB = 1024 ** 3
-const statfs = mock.fn()
-const totalmem = mock.fn()
+const freeDiskBytes = mock.fn()
+const totalMemoryBytes = mock.fn()
 const canReach = mock.fn()
 const proxy = { value: null }
-mock.module('node:fs/promises', { namedExports: { ...fsp, statfs } })
-mock.module('node:os', { namedExports: { ...os, totalmem } })
+mock.module('../scripts/lib/system.mjs', { namedExports: { freeDiskBytes, totalMemoryBytes } })
 mock.module('../scripts/lib/network.mjs', { namedExports: { canReach, proxyUrl: () => proxy.value } })
 const { SERVERS, checkDisk, checkMemory, checkNetwork } = await import('../scripts/checks/machine.mjs')
 
@@ -18,8 +15,8 @@ const text = () => output.join('\n')
 beforeEach(() => {
   output = []
   mock.method(console, 'log', (line = '') => output.push(line))
-  statfs.mock.mockImplementation(async () => ({ bavail: 100 * GiB / 4096, bsize: 4096 }))
-  totalmem.mock.mockImplementation(() => 16 * GiB)
+  freeDiskBytes.mock.mockImplementation(async () => 100 * GiB)
+  totalMemoryBytes.mock.mockImplementation(() => 16 * GiB)
   canReach.mock.mockImplementation(async () => true)
   proxy.value = null
 })
@@ -31,13 +28,13 @@ test('plenty of free disk space passes', async () => {
 })
 
 test('some free disk space passes with a warning', async () => {
-  statfs.mock.mockImplementation(async () => ({ bavail: 15 * GiB / 4096, bsize: 4096 }))
+  freeDiskBytes.mock.mockImplementation(async () => 15 * GiB)
   assert.equal(await checkDisk(), true)
   assert.match(text(), /15 GB of free disk space, 20 GB or more is comfortable/)
 })
 
 test('too little free disk space fails', async () => {
-  statfs.mock.mockImplementation(async () => ({ bavail: 4 * GiB / 4096, bsize: 4096 }))
+  freeDiskBytes.mock.mockImplementation(async () => 4 * GiB)
   assert.equal(await checkDisk(), false)
   assert.match(text(), /Only 4 GB of free disk space.*at least 10 GB/)
 })
@@ -46,7 +43,7 @@ test('enough memory passes, little memory only warns', () => {
   assert.equal(checkMemory(), true)
   assert.match(text(), /16 GB of memory/)
   output.length = 0
-  totalmem.mock.mockImplementation(() => 4 * GiB)
+  totalMemoryBytes.mock.mockImplementation(() => 4 * GiB)
   assert.equal(checkMemory(), true)
   assert.match(text(), /4 GB of memory, 8 GB is the minimum/)
 })

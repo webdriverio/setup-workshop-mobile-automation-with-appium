@@ -1,5 +1,5 @@
-import { existsSync } from 'node:fs'
 import { IS_MAC, IS_WIN, run } from '../lib/shell.mjs'
+import { fileExists } from '../lib/system.mjs'
 import { fail, info, ok, warn } from '../lib/ui.mjs'
 
 const VSCODE_MAC_BIN = '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
@@ -61,7 +61,7 @@ export function checkVsCode() {
   }
   warn('The `code` command is not available in your terminal (optional)')
   info('With it you can open the workshop folder from the terminal: code .')
-  if (IS_MAC && existsSync(VSCODE_MAC_BIN)) {
+  if (IS_MAC && fileExists(VSCODE_MAC_BIN)) {
     info('VS Code is installed. Run: npm run setup, and choose "Visual Studio Code".')
   } else if (IS_WIN) {
     info('Re-run the VS Code installer and check "Add to PATH", or add the bin folder of VS Code to your PATH.')

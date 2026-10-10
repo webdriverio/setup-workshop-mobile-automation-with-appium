@@ -1,6 +1,5 @@
-import { statfs } from 'node:fs/promises'
-import { homedir, totalmem } from 'node:os'
 import { canReach, proxyUrl } from '../lib/network.mjs'
+import { freeDiskBytes, totalMemoryBytes } from '../lib/system.mjs'
 import { info, ok, warn, fail } from '../lib/ui.mjs'
 
 /** The machine itself. Only a lack of disk space stops us, the rest are warnings: the workshop may still work. */
@@ -12,8 +11,7 @@ export const DISK_WARN = 20 * GiB
 export const MEMORY_WARN = 7 * GiB
 
 export async function checkDisk() {
-  const { bavail, bsize } = await statfs(homedir())
-  const free = bavail * bsize
+  const free = await freeDiskBytes()
   const gb = (free / GiB).toFixed(0)
   if (free < DISK_MIN) {
     fail(`Only ${gb} GB of free disk space, the workshop needs at least ${DISK_MIN / GiB} GB (${DISK_WARN / GiB} GB or more is comfortable)`)
@@ -29,8 +27,9 @@ export async function checkDisk() {
 }
 
 export function checkMemory() {
-  const gb = (totalmem() / GiB).toFixed(0)
-  if (totalmem() < MEMORY_WARN) {
+  const memory = totalMemoryBytes()
+  const gb = (memory / GiB).toFixed(0)
+  if (memory < MEMORY_WARN) {
     warn(`${gb} GB of memory, 8 GB is the minimum and 16 GB is better: running two emulators may be slow`)
   } else {
     ok(`${gb} GB of memory`)
