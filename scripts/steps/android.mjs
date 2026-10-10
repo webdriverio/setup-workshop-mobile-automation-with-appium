@@ -1,11 +1,10 @@
 import {
   ANDROID_VERSION, AVD_NAMES, MIN_JAVA, PIXEL_MODEL, REQUIRED_PACKAGES, acceptLicenses, createAvd, defaultSdkPath,
-  detectJava, detectSdkPath, hasSkin, installCmdlineTools, installJdk, installPackages, installSkin, isValidJavaHome,
+  androidEnvGaps, detectJava, detectSdkPath, hasSkin, installCmdlineTools, installJdk, installPackages, installSkin,
   javaMajor, listAvds, listInstalledPackages, platformToolsDirs, sdkTool,
 } from '../lib/android.mjs'
 import { applyToProcess, persistEnv } from '../lib/env.mjs'
 import { dry, runPlan } from '../lib/plan.mjs'
-import { run } from '../lib/shell.mjs'
 import { FLAGS, bold, fail, header, info, ok, warn } from '../lib/ui.mjs'
 
 /**
@@ -22,10 +21,7 @@ export function planAndroid() {
   const avds = canInspect ? listAvds(sdk, ctx.java.home) ?? [] : []
   const missingAvds = AVD_NAMES.filter((name) => !avds.includes(name))
 
-  const envVars = []
-  if (!process.env.ANDROID_HOME) envVars.push('ANDROID_HOME')
-  if (!isValidJavaHome(process.env.JAVA_HOME) || javaMajor(process.env.JAVA_HOME) < MIN_JAVA) envVars.push('JAVA_HOME')
-  const pathMissing = !run('adb --version')
+  const { vars: envVars, pathMissing } = androidEnvGaps()
 
   return [
     {

@@ -2,7 +2,9 @@ import { spawnSync } from 'node:child_process'
 import { select } from '@inquirer/prompts'
 import { setupAndroid } from './steps/android.mjs'
 import { setupIos } from './steps/ios.mjs'
+import { needsCodeCommand, setupVscode } from './steps/vscode.mjs'
 import { IS_MAC, IS_WIN } from './lib/shell.mjs'
+import { printBanner } from './lib/banner.mjs'
 import { FLAGS, ask, bold, info, warn } from './lib/ui.mjs'
 
 const PLATFORMS = {
@@ -12,7 +14,7 @@ const PLATFORMS = {
 
 /** Run the wizard. Resolves to the exit code: 0 when all is well, 1 when something still needs attention. */
 export async function runWizard() {
-  console.log(`\n${bold('Appium + WebdriverIO workshop, environment setup')}`)
+  printBanner('Appium + WebdriverIO workshop, environment setup')
   if (FLAGS.dryRun) warn('Dry run: nothing will be changed.')
 
   const results = {}
@@ -20,6 +22,7 @@ export async function runWizard() {
   if (FLAGS.yes) {
     results.android = await setupAndroid()
     if (IS_MAC) results.ios = await setupIos()
+    if (IS_MAC && needsCodeCommand()) await setupVscode()
   } else {
     if (!IS_MAC) info('iOS is only available on macOS, so it is not in the list.')
     const status = (platform) => (results[platform] === undefined ? '' : results[platform] ? '  ✔ ready' : '  ⚠ needs attention')
@@ -29,11 +32,13 @@ export async function runWizard() {
         choices: [
           { name: `Android${status('android')}`, value: 'android' },
           ...(IS_MAC ? [{ name: `iOS${status('ios')}`, value: 'ios' }] : []),
+          ...(IS_MAC && needsCodeCommand() ? [{ name: 'Visual Studio Code, add the `code` command (optional)', value: 'vscode' }] : []),
           { name: 'Finish', value: 'finish' },
         ],
       })
       if (choice === 'finish') break
-      results[choice] = await PLATFORMS[choice]()
+      if (choice === 'vscode') await setupVscode()
+      else results[choice] = await PLATFORMS[choice]()
     }
   }
 

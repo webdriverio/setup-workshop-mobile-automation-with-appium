@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
+const needsCodeCommand = mock.fn(() => false)
+const setupVscode = mock.fn(async () => true)
 const select = mock.fn()
 const confirm = mock.fn(async () => true)
 const spawnSync = mock.fn(() => ({ status: 0 }))
@@ -10,6 +12,7 @@ mock.module('@inquirer/prompts', { namedExports: { select, confirm } })
 mock.module('node:child_process', { namedExports: { spawnSync } })
 mock.module('../scripts/steps/android.mjs', { namedExports: { setupAndroid } })
 mock.module('../scripts/steps/ios.mjs', { namedExports: { setupIos } })
+mock.module('../scripts/steps/vscode.mjs', { namedExports: { needsCodeCommand, setupVscode } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { IS_MAC: true, IS_WIN: false } })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { runWizard } = await import('../scripts/wizard.mjs')
@@ -19,7 +22,8 @@ let output
 beforeEach(() => {
   output = []
   mock.method(console, 'log', (line = '') => output.push(line))
-  for (const fn of [select, confirm, spawnSync, setupAndroid, setupIos]) fn.mock.resetCalls()
+  for (const fn of [select, confirm, spawnSync, setupAndroid, setupIos, needsCodeCommand, setupVscode]) fn.mock.resetCalls()
+  needsCodeCommand.mock.mockImplementation(() => false)
   confirm.mock.mockImplementation(async () => true)
   spawnSync.mock.mockImplementation(() => ({ status: 0 }))
   setupAndroid.mock.mockImplementation(async () => true)
@@ -117,4 +121,25 @@ test('no check when no platform is ready, in a dry run, or when nothing was chos
   assert.ok(output.some((line) => line.includes('Next:')))
   assert.equal(spawnSync.mock.callCount(), 0)
   assert.equal(confirm.mock.callCount(), 0)
+})
+
+test('the menu offers the code command only while it is missing, and it does not count as a platform', async () => {
+  needsCodeCommand.mock.mockImplementation(() => true)
+  answers('vscode', 'finish')
+  assert.equal(await runWizard(), 0)
+  assert.equal(setupVscode.mock.callCount(), 1)
+  assert.ok(select.mock.calls[0].arguments[0].choices.some((c) => c.value === 'vscode'))
+  assert.equal(spawnSync.mock.callCount(), 0)
+
+  needsCodeCommand.mock.mockImplementation(() => false)
+  answers('finish')
+  await runWizard()
+  assert.ok(!select.mock.calls.at(-1).arguments[0].choices.some((c) => c.value === 'vscode'))
+})
+
+test('--yes also adds the code command when it is missing', async () => {
+  FLAGS.yes = true
+  needsCodeCommand.mock.mockImplementation(() => true)
+  await runWizard()
+  assert.equal(setupVscode.mock.callCount(), 1)
 })

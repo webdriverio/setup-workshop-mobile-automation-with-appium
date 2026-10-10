@@ -212,6 +212,10 @@ export function createAvd(sdk, jdk, name) {
   })
 }
 
-export function adbVersion(sdk) {
-  return run('adb --version') || run(`"${join(sdk, 'platform-tools', exe('adb'))}" --version`)
+/** What this terminal is missing: ANDROID_HOME, a usable JAVA_HOME (17+) and adb on the PATH. Shared by the setup and the check. */
+export function androidEnvGaps() {
+  const vars = []
+  if (!process.env.ANDROID_HOME) vars.push('ANDROID_HOME')
+  if (!isValidJavaHome(process.env.JAVA_HOME) || javaMajor(process.env.JAVA_HOME) < MIN_JAVA) vars.push('JAVA_HOME')
+  return { vars, pathMissing: !run('adb --version') }
 }

@@ -261,10 +261,19 @@ test('createAvd uses the Pixel 9 profile, and adds the Pixel 10 skin when it is 
   assert.deepEqual(runFile.mock.calls[1].arguments[1].slice(-2), ['--skin', 'pixel_10'])
 })
 
-test('adbVersion falls back to adb inside the SDK when it is not on the PATH', skipOnWindows, () => {
-  run.mock.mockImplementation((cmd) => (cmd === 'adb --version' ? 'Android Debug Bridge version 1.0.41' : null))
-  assert.match(android.adbVersion('/sdk'), /Android Debug Bridge/)
+test('androidEnvGaps lists what the terminal is missing', skipOnWindows, () => {
+  const jdk = fakeJdk(join(root, 'env-jdk'), '21.0.1')
+  run.mock.mockImplementation(() => 'Android Debug Bridge')
+  Object.assign(process.env, { ANDROID_HOME: '/sdk', JAVA_HOME: jdk })
+  assert.deepEqual(android.androidEnvGaps(), { vars: [], pathMissing: false })
 
-  run.mock.mockImplementation((cmd) => (cmd.startsWith('"/sdk/platform-tools/adb"') ? 'from the SDK' : null))
-  assert.equal(android.adbVersion('/sdk'), 'from the SDK')
+  delete process.env.ANDROID_HOME
+  run.mock.mockImplementation(() => null)
+  assert.deepEqual(android.androidEnvGaps(), { vars: ['ANDROID_HOME'], pathMissing: true })
+
+  process.env.JAVA_HOME = fakeJdk(join(root, 'old-jdk'), '11.0.2')
+  assert.deepEqual(android.androidEnvGaps().vars, ['ANDROID_HOME', 'JAVA_HOME'])
+
+  process.env.JAVA_HOME = join(root, 'no-jdk')
+  assert.ok(android.androidEnvGaps().vars.includes('JAVA_HOME'))
 })

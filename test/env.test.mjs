@@ -62,3 +62,13 @@ test('uses .bashrc on Linux with bash, and .zshrc on a Mac or with zsh', skipOnW
     process.env.SHELL = '/bin/zsh'
   }
 })
+
+test('a separate block does not overwrite the default one', skipOnWindows, () => {
+  persistEnv({ vars: { ANDROID_HOME: '/sdk' } })
+  persistEnv({ paths: ['/vscode/bin'], block: 'other step' })
+  persistEnv({ paths: ['/vscode/bin2'], block: 'other step' })
+  const content = readFileSync(shellProfile(), 'utf8')
+  assert.match(content, /export ANDROID_HOME="\/sdk"/)
+  assert.match(content, /\/vscode\/bin2/)
+  assert.doesNotMatch(content, /\/vscode\/bin"/)
+})

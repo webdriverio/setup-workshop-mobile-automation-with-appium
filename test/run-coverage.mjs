@@ -13,6 +13,8 @@ import { spawnSync } from 'node:child_process'
 const MODULES = [
   { module: 'scripts/lib/shell.mjs', tests: ['shell'] },
   { module: 'scripts/lib/ui.mjs', tests: ['ui'] },
+  { module: 'scripts/lib/progress.mjs', tests: ['progress'] },
+  { module: 'scripts/lib/banner.mjs', tests: ['banner'] },
   { module: 'scripts/lib/plan.mjs', tests: ['plan'] },
   { module: 'scripts/lib/download.mjs', tests: ['download'] },
   { module: 'scripts/lib/env.mjs', tests: ['env', 'env-windows'] },
@@ -20,7 +22,12 @@ const MODULES = [
   { module: 'scripts/lib/smoke.mjs', tests: ['smoke'] },
   { module: 'scripts/smoke/capabilities.mjs', tests: ['smoke'] },
   { module: 'scripts/lib/android.mjs', tests: ['android', 'android-windows'] },
+  { module: 'scripts/checks/tools.mjs', tests: ['checks-tools', 'checks-tools-mac', 'checks-tools-windows'] },
+  { module: 'scripts/checks/android.mjs', tests: ['checks-android'] },
+  { module: 'scripts/checks/ios.mjs', tests: ['checks-ios'] },
+  { module: 'scripts/checks/session.mjs', tests: ['checks-session'] },
   { module: 'scripts/steps/ios.mjs', tests: ['steps-ios'] },
+  { module: 'scripts/steps/vscode.mjs', tests: ['steps-vscode'] },
   { module: 'scripts/steps/android.mjs', tests: ['steps-android'] },
   { module: 'scripts/wizard.mjs', tests: ['wizard', 'wizard-no-mac'] },
 ]

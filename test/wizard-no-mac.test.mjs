@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
+const needsCodeCommand = mock.fn(() => false)
+const setupVscode = mock.fn(async () => true)
 const select = mock.fn()
 const setupAndroid = mock.fn(async () => true)
 const setupIos = mock.fn(async () => true)
@@ -9,6 +11,7 @@ mock.module('@inquirer/prompts', { namedExports: { select, confirm: mock.fn() } 
 mock.module('node:child_process', { namedExports: { spawnSync } })
 mock.module('../scripts/steps/android.mjs', { namedExports: { setupAndroid } })
 mock.module('../scripts/steps/ios.mjs', { namedExports: { setupIos } })
+mock.module('../scripts/steps/vscode.mjs', { namedExports: { needsCodeCommand, setupVscode } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { IS_MAC: false, IS_WIN: true } })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { runWizard } = await import('../scripts/wizard.mjs')
@@ -18,7 +21,7 @@ let output
 beforeEach(() => {
   output = []
   mock.method(console, 'log', (line = '') => output.push(line))
-  for (const fn of [select, setupAndroid, setupIos]) fn.mock.resetCalls()
+  for (const fn of [select, setupAndroid, setupIos, needsCodeCommand]) fn.mock.resetCalls()
   setupAndroid.mock.mockImplementation(async () => true)
   setupIos.mock.mockImplementation(async () => true)
   FLAGS.yes = false

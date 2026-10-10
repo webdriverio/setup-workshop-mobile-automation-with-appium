@@ -19,7 +19,7 @@ npm run setup   # installs and configures what is missing (Android, iOS)
 npm run check   # proves it works by running a small test on your emulator/simulator
 ```
 
-Both are safe to run as often as you like. Run `npm run setup` again after fixing something and it continues where it left off.
+Both are safe to run as often as you like. `npm run setup` is the one that changes your machine, and it continues where it left off. `npm run check` only looks: it never changes anything, and for everything that is missing it tells you to run `npm run setup`.
 
 `npm run setup` checks which platforms your machine supports and only shows those. Android works on macOS, Windows and Linux. iOS needs macOS and Xcode, so on Windows or Linux you won't see iOS in the list, and that is expected.
 
@@ -206,7 +206,7 @@ node --version   # should print v24.x.x
 
 </details>
 
-Then install the dependencies of this repository (this includes Appium and its drivers, used by the check in step 7):
+Then install the dependencies of this repository (this includes Appium and its drivers, used by the session test of the check in step 7):
 
 ```bash
 npm install
@@ -226,7 +226,7 @@ See [docs/vscode.md](docs/vscode.md) for full instructions including recommended
    code --version
    ```
 
-> **TODO (Wim):** the old `check` script could create the `code` symlink on macOS. The new `check` has not been rewritten yet, so decide if that fix stays or the docs cover it.
+On macOS the installer does not add the `code` command. `npm run setup` offers to add it for you (choose **Visual Studio Code** in the menu), or do it yourself, see [docs/vscode.md](docs/vscode.md). The `code` command is optional, the workshop works without it.
 
 ---
 
@@ -332,18 +332,25 @@ At the end of `npm run setup` you are asked if you want to run the check. You ca
 npm run check
 ```
 
-The script checks each tool and tells you exactly what is working and what isn't. The last step is the real proof: it starts Appium and runs a small WebdriverIO test that opens the **Settings** app on your emulator/simulator and reads the screen. This is the same thing you do in the first exercise of the workshop.
+The check only looks, it never changes anything on your machine. It goes through this list and marks each item with ✔ or ✘:
+
+1. **Tools:** Git, Node.js 24+, npm and Visual Studio Code (the `code` command is optional, so a missing one is only a warning ⚠).
+2. **Java and Android:** `JAVA_HOME`, `ANDROID_HOME`, `adb` and `emulator` on your `PATH`, and the two workshop emulators.
+3. **iOS (macOS only):** Xcode, its licence and components, the iOS simulator runtime and the two workshop simulators.
+4. **WebdriverIO session:** the real proof. It starts Appium and runs a small WebdriverIO test that opens the **Settings** app on your emulator/simulator and reads the screen. This is the same thing you do in the first exercise of the workshop. This step is skipped when an earlier item failed, because it cannot work then.
+
+Android and iOS are tested at the same time, each on its own line that updates while it runs. When both are done, the explanation of anything that failed is shown below, with `[Android]` or `[iOS]` in front.
 
 If no emulator or simulator is running, the check starts one for you (this takes a minute or two) and closes it again when it is done. One that you started yourself is left open.
 
-To test only one platform:
+To test only one platform (this limits all the checks, not only the session):
 
 ```bash
-npm run check -- --android   # only the Android emulator
-npm run check -- --ios       # only the iOS simulator (macOS only)
+npm run check -- --android   # only Android
+npm run check -- --ios       # only iOS (macOS only)
 ```
 
-Fix anything marked with ✘ before the workshop. Warnings (⚠) are fine to leave.
+Fix anything marked with ✘ by running `npm run setup` (open a new terminal afterwards) and run the check again. When everything passes, you are ready for the workshop.
 
 **The Android test fails the first time?** Right after a fresh emulator start, the check can fail with `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL`. These messages mean the connection between your computer and the emulator was not ready yet, nothing is wrong with your setup. The check waits until the emulator is ready and tries once more by itself. If it still fails, run it again, or start the emulator yourself, wait until you see the home screen and run `npm run check -- --android`.
 
@@ -361,7 +368,6 @@ Run `npm run setup` again first. It re-checks everything and fixes what it can.
 | `adb` or `emulator` not found | Open a **new** terminal after `npm run setup`, then run `npm run setup` again |
 | Download fails or is very slow | Run `npm run setup` again, it starts the missing download from the beginning |
 | `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL` during the check | The emulator was not ready yet. Run `npm run check -- --android` again, see [7. Verify your setup](#7-verify-your-setup) |
-| Emulator won't start | **TODO (Wim):** needs a troubleshooting page. The old Android Studio guide is gone |
 | Xcode issues | [docs/xcode-ios.md](docs/xcode-ios.md) |
 
 Still stuck? Reach out before the workshop so we can sort it out in advance.
@@ -374,5 +380,3 @@ You do **not** need to install any of the following ahead of time:
 
 - The workshop project itself and its dependencies
 - Appium Inspector
-
-> **TODO (Wim):** check this list. Appium and the drivers used to be in it, but they are now installed here by `npm install`.

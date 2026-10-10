@@ -61,9 +61,3 @@ test('the command-line tools are the Windows build', async () => {
   assert.match(download.mock.calls.at(-1).arguments[0], /commandlinetools-win-111_latest\.zip$/)
   mock.restoreAll()
 })
-
-test('adb is adb.exe inside the SDK when it is not on the PATH', () => {
-  const sdk = join(root, 'sdk')
-  assert.equal(android.adbVersion(sdk), null)
-  assert.equal(run.mock.calls.at(-1).arguments[0], `"${join(sdk, 'platform-tools', 'adb.exe')}" --version`)
-})

@@ -4,7 +4,7 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { run, runFile } from './shell.mjs'
+import { run, runFile, runFileAsync } from './shell.mjs'
 
 /**
  * The WebdriverIO smoke test: run a real WebdriverIO test (Appium service included, like the workshop project) that opens the
@@ -82,7 +82,7 @@ const listIosDevices = () => {
 }
 
 /** Same as ensureAndroidDevice, for the iOS simulator. */
-export function ensureIosDevice({ onStatus = () => {} } = {}) {
+export async function ensureIosDevice({ onStatus = () => {} } = {}) {
   const devices = listIosDevices()
   const booted = devices.find((d) => d.state === 'Booted')
   if (booted) return { udid: booted.udid, stop: null }
@@ -91,8 +91,8 @@ export function ensureIosDevice({ onStatus = () => {} } = {}) {
   if (!target) throw new Error('NO_DEVICE')
 
   onStatus(`No simulator running, starting ${target.name}...`)
-  if (runFile('xcrun', ['simctl', 'boot', target.udid]).exitCode !== 0) throw new Error('DEVICE_BOOT_FAILED')
-  runFile('xcrun', ['simctl', 'bootstatus', target.udid], { timeout: DEVICE_BOOT_TIMEOUT })
+  if ((await runFileAsync('xcrun', ['simctl', 'boot', target.udid])).exitCode !== 0) throw new Error('DEVICE_BOOT_FAILED')
+  await runFileAsync('xcrun', ['simctl', 'bootstatus', target.udid], { timeout: DEVICE_BOOT_TIMEOUT })
   return { udid: target.udid, stop: () => runFile('xcrun', ['simctl', 'shutdown', target.udid]) }
 }
 
@@ -134,7 +134,7 @@ async function runOnce({ platform, udid }) {
   const logDir = await mkdtemp(join(tmpdir(), 'workshop-appium-'))
   try {
     const env = { ...process.env, SMOKE_PLATFORM: platform, SMOKE_UDID: udid, SMOKE_PORT: String(port), SMOKE_LOG_DIR: logDir }
-    const { output, exitCode } = runFile(process.execPath, [RUNNER], { env, timeout: SESSION_TIMEOUT })
+    const { output, exitCode } = await runFileAsync(process.execPath, [RUNNER], { env, timeout: SESSION_TIMEOUT })
     const appiumLog = await readFile(join(logDir, 'wdio-appium.log'), 'utf8').catch(() => '')
     return { passed: exitCode === 0, log: [...output.split('\n'), ...appiumLog.split('\n')].map((l) => l.trim()).filter(Boolean) }
   } finally {

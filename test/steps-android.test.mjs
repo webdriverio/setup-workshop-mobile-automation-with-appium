@@ -3,23 +3,22 @@ import { afterEach, beforeEach, mock, test } from 'node:test'
 
 const lib = {
   detectSdkPath: mock.fn(), defaultSdkPath: mock.fn(), detectJava: mock.fn(), sdkTool: mock.fn(), listInstalledPackages: mock.fn(),
-  listAvds: mock.fn(), isValidJavaHome: mock.fn(), javaMajor: mock.fn(), installJdk: mock.fn(), installCmdlineTools: mock.fn(),
+  listAvds: mock.fn(), androidEnvGaps: mock.fn(), javaMajor: mock.fn(), installJdk: mock.fn(), installCmdlineTools: mock.fn(),
   acceptLicenses: mock.fn(), installPackages: mock.fn(), hasSkin: mock.fn(), installSkin: mock.fn(), createAvd: mock.fn(),
   platformToolsDirs: mock.fn(),
 }
 const persistEnv = mock.fn()
 const applyToProcess = mock.fn()
-const run = mock.fn()
 const REQUIRED_PACKAGES = ['platform-tools', 'emulator', 'platforms;android-37.0', 'system-image']
 const AVD_NAMES = ['Workshop_1', 'Workshop_2']
 mock.module('../scripts/lib/android.mjs', {
   namedExports: { ...lib, ANDROID_VERSION: 17, AVD_NAMES, MIN_JAVA: 17, PIXEL_MODEL: 10, REQUIRED_PACKAGES },
 })
 mock.module('../scripts/lib/env.mjs', { namedExports: { persistEnv, applyToProcess } })
-mock.module('../scripts/lib/shell.mjs', { namedExports: { run } })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planAndroid, setupAndroid } = await import('../scripts/steps/android.mjs')
 
+const ENV_GAPS = { vars: ['ANDROID_HOME', 'JAVA_HOME'], pathMissing: true }
 const JAVA = { home: '/jdk', major: 21, source: 'JAVA_HOME' }
 const savedEnv = { ...process.env }
 let output
@@ -32,7 +31,7 @@ const readyMachine = () => {
   lib.sdkTool.mock.mockImplementation(() => '/sdk/cmdline-tools/latest/bin/sdkmanager')
   lib.listInstalledPackages.mock.mockImplementation(() => new Set(REQUIRED_PACKAGES))
   lib.listAvds.mock.mockImplementation(() => AVD_NAMES)
-  lib.isValidJavaHome.mock.mockImplementation(() => true)
+  lib.androidEnvGaps.mock.mockImplementation(() => ({ vars: [], pathMissing: false }))
   lib.javaMajor.mock.mockImplementation(() => 21)
   lib.hasSkin.mock.mockImplementation(() => true)
   lib.platformToolsDirs.mock.mockImplementation((sdk) => [`${sdk}/platform-tools`])
@@ -41,19 +40,13 @@ const readyMachine = () => {
   lib.installJdk.mock.mockImplementation(async () => '/downloaded-jdk')
   lib.acceptLicenses.mock.mockImplementation(() => true)
   lib.installPackages.mock.mockImplementation(() => true)
-  run.mock.mockImplementation(() => 'Android Debug Bridge')
-  process.env.ANDROID_HOME = '/sdk'
-  process.env.JAVA_HOME = '/jdk'
 }
 const emptyMachine = () => {
   readyMachine()
   lib.detectSdkPath.mock.mockImplementation(() => null)
   lib.detectJava.mock.mockImplementation(() => null)
   lib.sdkTool.mock.mockImplementation(() => null)
-  run.mock.mockImplementation(() => null)
-  delete process.env.ANDROID_HOME
-  delete process.env.JAVA_HOME
-  lib.isValidJavaHome.mock.mockImplementation(() => false)
+  lib.androidEnvGaps.mock.mockImplementation(() => ENV_GAPS)
 }
 const step = (steps, title) => steps.find((s) => s.title.includes(title))
 const status = (steps) => Object.fromEntries(steps.map((s) => [s.title, s.done]))
@@ -61,7 +54,7 @@ const status = (steps) => Object.fromEntries(steps.map((s) => [s.title, s.done])
 beforeEach(() => {
   output = []
   mock.method(console, 'log', (line) => output.push(line))
-  for (const fn of [...Object.values(lib), persistEnv, applyToProcess, run]) fn.mock.resetCalls()
+  for (const fn of [...Object.values(lib), persistEnv, applyToProcess]) fn.mock.resetCalls()
   FLAGS.yes = true
   FLAGS.dryRun = false
   readyMachine()
@@ -102,17 +95,11 @@ test('a failing sdkmanager or avdmanager counts as nothing installed', () => {
   assert.equal(step(steps, 'emulators').done, false)
 })
 
-test('environment variables are missing when JAVA_HOME is too old or invalid, or adb is not on the PATH', () => {
-  lib.javaMajor.mock.mockImplementation(() => 11)
-  assert.equal(step(planAndroid(), 'Environment').done, false)
-
-  readyMachine()
-  lib.isValidJavaHome.mock.mockImplementation(() => false)
-  assert.equal(step(planAndroid(), 'Environment').done, false)
-
-  readyMachine()
-  run.mock.mockImplementation(() => null)
-  assert.equal(step(planAndroid(), 'Environment').done, false)
+test('the environment step is missing when a variable or the PATH is missing', () => {
+  for (const gaps of [{ vars: ['JAVA_HOME'], pathMissing: false }, { vars: [], pathMissing: true }]) {
+    lib.androidEnvGaps.mock.mockImplementation(() => gaps)
+    assert.equal(step(planAndroid(), 'Environment').done, false)
+  }
 })
 
 test('Java step: downloads Java and remembers it for the next steps', async () => {
@@ -188,8 +175,7 @@ test('emulators step: reports an emulator that could not be created and still tr
 })
 
 test('environment step: saves only what is missing, and tells to open a new terminal', async () => {
-  delete process.env.ANDROID_HOME
-  run.mock.mockImplementation(() => null)
+  lib.androidEnvGaps.mock.mockImplementation(() => ({ vars: ['ANDROID_HOME'], pathMissing: true }))
   assert.equal(await step(planAndroid(), 'Environment').apply(), true)
   const saved = { vars: { ANDROID_HOME: '/sdk' }, paths: ['/sdk/platform-tools'] }
   assert.deepEqual(persistEnv.mock.calls[0].arguments[0], saved)
@@ -198,13 +184,13 @@ test('environment step: saves only what is missing, and tells to open a new term
 })
 
 test('environment step: also saves JAVA_HOME when it is not valid', async () => {
-  lib.isValidJavaHome.mock.mockImplementation(() => false)
+  lib.androidEnvGaps.mock.mockImplementation(() => ({ vars: ['JAVA_HOME'], pathMissing: false }))
   assert.equal(await step(planAndroid(), 'Environment').apply(), true)
   assert.equal(persistEnv.mock.calls[0].arguments[0].vars.JAVA_HOME, '/jdk')
 })
 
 test('environment step: reports when the variables cannot be saved', async () => {
-  delete process.env.ANDROID_HOME
+  lib.androidEnvGaps.mock.mockImplementation(() => ({ vars: ['ANDROID_HOME'], pathMissing: false }))
   persistEnv.mock.mockImplementation(() => { throw new Error('read-only profile') })
   assert.equal(await step(planAndroid(), 'Environment').apply(), false)
   assert.ok(output.some((line) => line.includes('read-only profile')))
@@ -231,7 +217,7 @@ test('setupAndroid on a ready machine only prints how to start the emulators', a
 })
 
 test('setupAndroid installs what is missing and points to a new terminal after changing the environment', async () => {
-  delete process.env.ANDROID_HOME
+  lib.androidEnvGaps.mock.mockImplementation(() => ({ vars: ['ANDROID_HOME'], pathMissing: false }))
   assert.equal(await setupAndroid(), true)
   assert.match(output.join('\n'), /in a new terminal/)
 })

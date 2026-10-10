@@ -15,6 +15,10 @@ export const todo   = (msg) => console.log(`  ${YELLOW}○${RESET}  ${msg}`)
 export const info   = (msg) => console.log(`     ${DIM}${msg}${RESET}`)
 export const header = (msg) => console.log(`\n${BOLD}${CYAN}${msg}${RESET}`)
 export const bold   = (msg) => `${BOLD}${msg}${RESET}`
+export const green  = (msg) => `${GREEN}${msg}${RESET}`
+export const red    = (msg) => `${RED}${msg}${RESET}`
+export const yellow = (msg) => `${YELLOW}${msg}${RESET}`
+export const dim    = (msg) => `${DIM}${msg}${RESET}`
 
 export const FLAGS = {
   yes: process.argv.includes('--yes') || !process.stdin.isTTY,

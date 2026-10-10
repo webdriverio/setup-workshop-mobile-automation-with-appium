@@ -5,8 +5,9 @@ import { beforeEach, mock, test } from 'node:test'
 
 const run = mock.fn()
 const runFile = mock.fn()
+const runFileAsync = mock.fn()
 const spawn = mock.fn()
-mock.module('../scripts/lib/shell.mjs', { namedExports: { run, runFile } })
+mock.module('../scripts/lib/shell.mjs', { namedExports: { run, runFile, runFileAsync } })
 mock.module('node:child_process', { namedExports: { spawn } })
 const smoke = await import('../scripts/lib/smoke.mjs')
 const { androidCapabilities, iosCapabilities } = await import('../scripts/smoke/capabilities.mjs')
@@ -21,7 +22,7 @@ const ADB_ONE = 'List of devices attached\nemulator-5554\tdevice\n'
 const sims = (...devices) => JSON.stringify({ devices: { 'iOS 27.0': devices } })
 
 beforeEach(() => {
-  for (const fn of [run, runFile, spawn]) {
+  for (const fn of [run, runFile, runFileAsync, spawn]) {
     fn.mock.resetCalls()
     fn.mock.mockImplementation(() => undefined)
   }
@@ -119,42 +120,43 @@ test('giving up on an emulator that never finishes booting', async () => {
   }
 })
 
-test('a booted iOS simulator is used and not stopped', () => {
+test('a booted iOS simulator is used and not stopped', async () => {
   run.mock.mockImplementation(() => sims({ name: 'iPhone 17', udid: 'U1', state: 'Booted' }))
-  assert.deepEqual(smoke.ensureIosDevice(), { udid: 'U1', stop: null })
+  assert.deepEqual(await smoke.ensureIosDevice(), { udid: 'U1', stop: null })
 })
 
-test('without a simulator there is no iOS device to test with', () => {
+test('without a simulator there is no iOS device to test with', async () => {
   run.mock.mockImplementation(() => sims({ name: 'Apple Watch', udid: 'W1', state: 'Shutdown' }))
-  assert.throws(() => smoke.ensureIosDevice(), /NO_DEVICE/)
+  await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
   run.mock.mockImplementation(() => 'not json')
-  assert.throws(() => smoke.ensureIosDevice(), /NO_DEVICE/)
+  await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
   run.mock.mockImplementation(() => null)
-  assert.throws(() => smoke.ensureIosDevice(), /NO_DEVICE/)
+  await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
   run.mock.mockImplementation(() => '{}')
-  assert.throws(() => smoke.ensureIosDevice(), /NO_DEVICE/)
+  await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
 })
 
-test('a workshop simulator is booted when none runs, and shut down by the caller', () => {
+test('a workshop simulator is booted when none runs, and shut down by the caller', async () => {
   run.mock.mockImplementation(() => sims(
     { name: 'iPhone 17', udid: 'U1', state: 'Shutdown' },
     { name: 'Workshop_1_iPhone_17_Pro_iOS_27_0', udid: 'U2', state: 'Shutdown' },
   ))
   runFile.mock.mockImplementation(() => result())
+  runFileAsync.mock.mockImplementation(async () => result())
   const statuses = []
-  const device = smoke.ensureIosDevice({ onStatus: (m) => statuses.push(m) })
+  const device = await smoke.ensureIosDevice({ onStatus: (m) => statuses.push(m) })
   assert.equal(device.udid, 'U2')
   assert.match(statuses[0], /Workshop_1/)
-  assert.deepEqual(runFile.mock.calls.map((c) => c.arguments[1].slice(0, 2)), [['simctl', 'boot'], ['simctl', 'bootstatus']])
+  assert.deepEqual(runFileAsync.mock.calls.map((c) => c.arguments[1].slice(0, 2)), [['simctl', 'boot'], ['simctl', 'bootstatus']])
   device.stop()
   assert.deepEqual(runFile.mock.calls.at(-1).arguments[1], ['simctl', 'shutdown', 'U2'])
 })
 
-test('any iPhone simulator will do when the workshop ones are missing, and a failing boot is reported', () => {
+test('any iPhone simulator will do when the workshop ones are missing, and a failing boot is reported', async () => {
   run.mock.mockImplementation(() => sims({ name: 'iPhone 17', udid: 'U1', state: 'Shutdown' }))
-  runFile.mock.mockImplementation(() => result('', 1))
-  assert.throws(() => smoke.ensureIosDevice(), /DEVICE_BOOT_FAILED/)
-  assert.equal(runFile.mock.calls[0].arguments[1][2], 'U1')
+  runFileAsync.mock.mockImplementation(async () => result('', 1))
+  await assert.rejects(smoke.ensureIosDevice(), /DEVICE_BOOT_FAILED/)
+  assert.equal(runFileAsync.mock.calls[0].arguments[1][2], 'U1')
 })
 
 // ─── Appium ─────────────────────────────────────────────────────────────────
@@ -181,7 +183,7 @@ test('freePort rejects when the server cannot listen', async () => {
 /** Pretend to be the runner: look at what it was started with and finish with the given exit code and output. */
 function fakeRunner(...runs) {
   const seen = []
-  runFile.mock.mockImplementation((file, args, options) => {
+  runFileAsync.mock.mockImplementation(async (file, args, options) => {
     const { SMOKE_PLATFORM, SMOKE_UDID, SMOKE_PORT, SMOKE_LOG_DIR } = options.env
     seen.push({ file, args, platform: SMOKE_PLATFORM, udid: SMOKE_UDID, port: SMOKE_PORT, timeout: options.timeout })
     const { output = '', exitCode = 0, appiumLog } = runs[Math.min(seen.length, runs.length) - 1]
@@ -207,7 +209,7 @@ test('runSmokeTest runs the WebdriverIO runner in its own process, for the given
 
 test('runSmokeTest reports a failure with the output of the runner, and cleans up its log folder', async () => {
   let logDir
-  runFile.mock.mockImplementation((file, args, options) => {
+  runFileAsync.mock.mockImplementation(async (file, args, options) => {
     logDir = options.env.SMOKE_LOG_DIR
     return { output: ' FAILED  \n\nboom ', exitCode: 1 }
   })

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, mock, test } from 'node:test'
 
 const confirm = mock.fn(async () => false)
 mock.module('@inquirer/prompts', { namedExports: { confirm } })
-const { FLAGS, ask, bold, fail, header, info, ok, todo, warn } = await import('../scripts/lib/ui.mjs')
+const { FLAGS, ask, bold, dim, green, red, yellow, fail, header, info, ok, todo, warn } = await import('../scripts/lib/ui.mjs')
 
 let lines
 beforeEach(() => {
@@ -38,4 +38,11 @@ test('without --yes ask prompts and returns the answer', async () => {
   FLAGS.yes = false
   assert.equal(await ask('Continue?'), false)
   assert.deepEqual(confirm.mock.calls[0].arguments[0], { message: 'Continue?', default: true })
+})
+
+test('the colour helpers wrap the text and keep it readable', () => {
+  for (const paint of [green, red, yellow, dim]) {
+    assert.match(paint('text'), /text/)
+    assert.notEqual(paint('text'), 'text')
+  }
 })

@@ -4,8 +4,7 @@ import { homedir } from 'node:os'
 import { basename, delimiter, join } from 'node:path'
 import { IS_WIN } from './shell.mjs'
 
-const START = '# >>> appium workshop setup >>>'
-const END = '# <<< appium workshop setup <<<'
+const DEFAULT_BLOCK = 'appium workshop setup'
 
 export function shellProfile() {
   return basename(process.env.SHELL || '') === 'zsh' || process.platform === 'darwin'
@@ -25,9 +24,10 @@ export function applyToProcess({ vars = {}, paths = [] }) {
  * Persist variables and PATH entries for future terminals.
  * macOS/Linux: one managed block in the shell profile, rewritten on every run (no duplicates).
  * Windows: user-level environment variables via PowerShell.
+ * Each `block` name has its own block, so separate setup steps do not overwrite each other.
  * Returns where it was written.
  */
-export function persistEnv({ vars = {}, paths = [] }) {
+export function persistEnv({ vars = {}, paths = [], block: name = DEFAULT_BLOCK }) {
   if (IS_WIN) {
     const script = [
       ...Object.entries(vars).map(([k, v]) => `[Environment]::SetEnvironmentVariable('${k}', '${v}', 'User')`),
@@ -40,6 +40,8 @@ export function persistEnv({ vars = {}, paths = [] }) {
   }
 
   const profile = shellProfile()
+  const START = `# >>> ${name} >>>`
+  const END = `# <<< ${name} <<<`
   const block = [
     START,
     ...Object.entries(vars).map(([k, v]) => `export ${k}="${v}"`),
