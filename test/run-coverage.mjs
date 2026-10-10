@@ -17,6 +17,8 @@ const MODULES = [
   { module: 'scripts/lib/download.mjs', tests: ['download'] },
   { module: 'scripts/lib/env.mjs', tests: ['env', 'env-windows'] },
   { module: 'scripts/lib/ios.mjs', tests: ['ios-lib'] },
+  { module: 'scripts/lib/smoke.mjs', tests: ['smoke'] },
+  { module: 'scripts/smoke/capabilities.mjs', tests: ['smoke'] },
   { module: 'scripts/lib/android.mjs', tests: ['android', 'android-windows'] },
   { module: 'scripts/steps/ios.mjs', tests: ['steps-ios'] },
   { module: 'scripts/steps/android.mjs', tests: ['steps-android'] },

@@ -13,6 +13,7 @@ import { platform, homedir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { detectJava } from './lib/android.mjs'
+import { appiumErrorLines, ensureAndroidDevice, ensureIosDevice, explainFailure, runSmokeTest } from './lib/smoke.mjs'
 
 const IS_MAC = platform() === 'darwin'
 const IS_WIN = platform() === 'win32'
@@ -601,6 +602,41 @@ await check('uiautomator2 driver doctor', () => runDoctor('uiautomator2'))
 
 if (IS_MAC) {
   await check('xcuitest driver doctor', () => runDoctor('xcuitest'))
+}
+
+// ── WebdriverIO session ───────────────────────────────────────────────────────
+
+async function smokeTest(platform, ensureDevice) {
+  let device = null
+  try {
+    device = await ensureDevice({ onStatus: info })
+    info(`Starting Appium and opening the Settings app on ${device.udid} (the first time this can take a few minutes)...`)
+    const { passed, log } = await runSmokeTest({ platform: platform.toLowerCase(), udid: device.udid })
+    if (passed) {
+      ok(`${platform}: WebdriverIO started Appium, opened the Settings app and read the screen`)
+      return
+    }
+    fail(`${platform}: could not open a session`)
+    hasErrors = true
+    info(explainFailure(log.join('\n'), platform.toLowerCase()))
+    appiumErrorLines(log).forEach((line) => info(`  ${line}`))
+  } catch (e) {
+    fail(`${platform}: could not get a device`)
+    hasErrors = true
+    info(explainFailure(e, platform.toLowerCase()))
+  } finally {
+    device?.stop?.()
+  }
+}
+
+header('WebdriverIO session')
+if (hasErrors) {
+  warn('Skipped, fix the items marked with ✘ above first.')
+} else {
+  await check('WebdriverIO session', async () => {
+    await smokeTest('Android', ensureAndroidDevice)
+    if (IS_MAC) await smokeTest('iOS', ensureIosDevice)
+  })
 }
 
 // ─── summary ─────────────────────────────────────────────────────────────────
