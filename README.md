@@ -90,11 +90,14 @@ Once the Android tools are installed (step 5) you can confirm acceleration works
 | **Visual Studio Code** | Latest | You, see [step 4](#4-visual-studio-code) |
 | **Java** | 17+ | `npm run setup` |
 | **Android SDK + 2 emulators** | Android 17 (API 37.0) | `npm run setup` |
-| **Xcode** *(macOS only)* | 26.4 | You, see [step 6](#6-ios-macos-only) |
-| **iOS Simulator** *(macOS only)* | iOS 26.2 or higher | You, see [step 6](#6-ios-macos-only) |
+| **Xcode** *(macOS only)* | 27 | You (App Store), see [step 6](#6-ios-macos-only) |
+| **iOS Simulator runtime + 2 simulators** *(macOS only)* | iOS 27 (the version that comes with your Xcode) | `npm run setup` |
 
 > [!NOTE]
 > **We do not use Android Studio in this workshop.** We set up Android with the command-line tools instead, so everyone has the same setup. If you have Android Studio installed and want to use it to manage your emulators, that's fine, but we can't support it when something goes wrong. If you run into issues, use the command line as described below.
+
+> [!NOTE]
+> **For iOS we also prefer the command line over the Xcode interface.** `npm run setup` downloads the iOS version and creates the two simulators for you, so everyone has the same setup. You can add simulators in Xcode yourself (**Open Developer Tool → Device Hub**), but with Xcode 27 a downloaded iOS version can be missing there. We can't support problems that come from that, see [section 6](#6-ios-macos-only).
 
 ---
 
@@ -257,7 +260,7 @@ When the script is done, **open a new terminal** so the environment variables ap
 
 ```bash
 npm run setup -- --dry-run   # show what would happen, change nothing
-npm run setup -- --yes       # Android only, don't ask questions
+npm run setup -- --yes       # don't ask questions, set up everything for your machine
 ```
 
 **Already have Java or an Android SDK?** The script finds and reuses them. It only downloads what is missing, and it only adds the environment variables that are missing.
@@ -290,23 +293,34 @@ adb devices
 
 iOS automation requires Xcode, which is only available on macOS. If you're on Windows or Linux you'll focus on Android during the iOS parts of the workshop.
 
-See [docs/xcode-ios.md](docs/xcode-ios.md) for full instructions.
+You install **Xcode** yourself from the App Store (≈ 15 GB, download it in advance and open it once). Then run `npm run setup` and choose **iOS**. It accepts the Xcode licence (asks for your Mac password), downloads the iOS simulator runtime (≈ 8 GB) and creates the two workshop simulators.
 
-**Quick steps:**
+See [docs/xcode-ios.md](docs/xcode-ios.md) for the details and for what to do when something goes wrong.
 
-1. Install **Xcode** from the App Store (≈ 15 GB, download in advance!).
-2. Accept the licence: `sudo xcodebuild -license accept`
-3. Install platform tools: `xcodebuild -runFirstLaunch`
-4. Open **Xcode → Settings → Platforms** and make sure an iOS runtime is installed.
-5. Start a simulator from the terminal:
-   ```bash
-   xcrun simctl boot "iPhone 17 Pro"
-   open -a Simulator
-   ```
+> [!NOTE]
+> **Known issue with Xcode 27:** a downloaded iOS version can be missing when you add a simulator yourself in Xcode (**Open Developer Tool → Device Hub**), so you cannot create one. `npm run setup` works around this. It may be fixed in a later Xcode version. Details in [docs/xcode-ios.md](docs/xcode-ios.md#known-issue-xcode-27-does-not-list-a-downloaded-ios-version).
 
-> **TODO (Wim):** this section is unchanged. Still to do:
-> - Newer iOS and Xcode versions, and the simulator name (`iPhone 17 Pro`).
-> - I'm planning to add iOS to `npm run setup` (runtime download and simulator creation). Xcode itself still comes from the App Store. Once that's in, this section gets as short as the Android one.
+**Start the simulators**
+
+Use [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator), it lists your simulators and starts the one you pick:
+
+```bash
+npx start-ios-simulator
+```
+
+Or start one directly (the Simulator app opens the booted devices):
+
+```bash
+xcrun simctl boot Workshop_1_iPhone_17_Pro_iOS_27_0
+open -a Simulator
+```
+
+Confirm it is running:
+
+```bash
+xcrun simctl list devices | grep Booted
+# Workshop_1_iPhone_17_Pro_iOS_27_0 (XXXXXXXX-...) (Booted)
+```
 
 ---
 
