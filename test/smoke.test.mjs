@@ -6,14 +6,18 @@ import { beforeEach, mock, test } from 'node:test'
 const run = mock.fn()
 const runFile = mock.fn()
 const runFileAsync = mock.fn()
-const spawn = mock.fn()
+const inspect = mock.fn(async () => ({ sdk: '/sdk' }))
+const listEmulators = mock.fn(async () => [])
+const launchEmulator = mock.fn(() => ({ logFile: '/log', exited: null }))
+const waitForEmulator = mock.fn(async () => ({ serial: 'emulator-5554', booted: true }))
+const adbBinary = mock.fn(() => '/sdk/platform-tools/adb')
 const listSimulators = mock.fn()
 const bootSimulator = mock.fn()
 const waitForBoot = mock.fn(async () => {})
 const shutdownSimulator = mock.fn()
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run, runFile, runFileAsync } })
 mock.module('start-ios-simulator', { namedExports: { listSimulators, bootSimulator, waitForBoot, shutdownSimulator } })
-mock.module('node:child_process', { namedExports: { spawn } })
+mock.module('start-android-emulator', { namedExports: { inspect, listEmulators, launchEmulator, waitForBoot: waitForEmulator, adbBinary } })
 const smoke = await import('../scripts/lib/smoke.mjs')
 const { androidCapabilities, iosCapabilities } = await import('../scripts/smoke/capabilities.mjs')
 
@@ -27,11 +31,15 @@ const ADB_ONE = 'List of devices attached\nemulator-5554\tdevice\n'
 const sim = (changes) => ({ name: 'iPhone 17', udid: 'U', version: '27.0', booted: false, ...changes })
 
 beforeEach(() => {
-  for (const fn of [run, runFile, runFileAsync, spawn, listSimulators, bootSimulator, waitForBoot, shutdownSimulator]) {
+  for (const fn of [run, runFile, runFileAsync, launchEmulator, waitForEmulator, listSimulators, bootSimulator, waitForBoot, shutdownSimulator]) {
     fn.mock.resetCalls()
     fn.mock.mockImplementation(() => undefined)
   }
   bootSimulator.mock.mockImplementation(() => ({ ok: true, output: '' }))
+  inspect.mock.mockImplementation(async () => ({ sdk: '/sdk' }))
+  listEmulators.mock.mockImplementation(async () => [])
+  launchEmulator.mock.mockImplementation(() => ({ logFile: '/log', exited: null }))
+  waitForEmulator.mock.mockImplementation(async () => ({ serial: 'emulator-5554', booted: true }))
 })
 
 // ─── capabilities ───────────────────────────────────────────────────────────
@@ -63,36 +71,60 @@ test('pickAvd prefers a workshop emulator, then any emulator', () => {
 test('an Android emulator that is already running is used and not stopped', async () => {
   run.mock.mockImplementation(() => ADB_ONE)
   assert.deepEqual(await smoke.ensureAndroidDevice(), { udid: 'emulator-5554', stop: null })
-  assert.equal(spawn.mock.callCount(), 0)
+  assert.equal(launchEmulator.mock.callCount(), 0)
 })
 
 test('without an AVD there is no Android device to test with', async () => {
-  run.mock.mockImplementation((cmd) => (cmd === 'adb devices' ? 'List of devices attached\n' : ''))
+  run.mock.mockImplementation(() => 'List of devices attached\n')
   await assert.rejects(smoke.ensureAndroidDevice(), /NO_DEVICE/)
-  run.mock.mockImplementation(() => null)
+  listEmulators.mock.mockImplementation(async () => null)
   await assert.rejects(smoke.ensureAndroidDevice(), /NO_DEVICE/)
 })
 
-test('an emulator is started when none runs, and the caller can stop it afterwards', async () => {
-  const unref = mock.fn()
-  spawn.mock.mockImplementation(() => ({ unref }))
-  const statuses = []
-  let adbCalls = 0
+/** An emulator whose Settings app and port forwarding work */
+const readyEmulator = () =>
   run.mock.mockImplementation((cmd) => {
-    if (cmd === 'emulator -list-avds') return 'Pixel_9\nWorkshop_2_Pixel_10_API_37_0'
-    if (cmd === 'adb devices') return ++adbCalls < 3 ? 'List of devices attached\n' : ADB_ONE
-    if (cmd === 'adb -s emulator-5554 shell getprop sys.boot_completed') return adbCalls < 4 ? '' : '1'
-    if (cmd === 'adb -s emulator-5554 shell getprop init.svc.bootanim') return 'stopped'
-    if (cmd === 'adb -s emulator-5554 shell pm path com.android.settings') return 'package:/system/priv-app/Settings/Settings.apk'
-    if (cmd === 'adb -s emulator-5554 forward tcp:0 tcp:6790') return '41234'
+    if (cmd === 'adb devices') return 'List of devices attached\n'
+    if (cmd.endsWith('getprop sys.boot_completed')) return '1'
+    if (cmd.endsWith('getprop init.svc.bootanim')) return 'stopped'
+    if (cmd.endsWith('pm path com.android.settings')) return 'package:/system/priv-app/Settings/Settings.apk'
+    if (cmd.endsWith('forward tcp:0 tcp:6790')) return '41234'
   })
+
+test('an emulator is started when none runs, and the caller can stop it afterwards', async () => {
+  listEmulators.mock.mockImplementation(async () => ['Pixel_9', 'Workshop_2_Pixel_10_API_37_0'])
+  readyEmulator()
+  const statuses = []
   const device = await smoke.ensureAndroidDevice({ onStatus: (m) => statuses.push(m) })
   assert.equal(device.udid, 'emulator-5554')
-  assert.deepEqual(spawn.mock.calls[0].arguments.slice(0, 2), ['emulator', ['-avd', 'Workshop_2_Pixel_10_API_37_0', '-no-snapshot-save', '-no-audio']])
-  assert.equal(unref.mock.callCount(), 1)
+  assert.deepEqual(launchEmulator.mock.calls[0].arguments, ['/sdk', { name: 'Workshop_2_Pixel_10_API_37_0', wipeData: false, coldBoot: false, dns: false }])
+  assert.deepEqual(waitForEmulator.mock.calls[0].arguments.slice(0, 2), ['/sdk/platform-tools/adb', 'Workshop_2_Pixel_10_API_37_0'])
   assert.match(statuses[0], /Workshop_2/)
   device.stop()
-  assert.deepEqual(runFile.mock.calls[0].arguments, ['adb', ['-s', 'emulator-5554', 'emu', 'kill']])
+  assert.deepEqual(runFile.mock.calls[0].arguments, ['/sdk/platform-tools/adb', ['-s', 'emulator-5554', 'emu', 'kill']])
+})
+
+test('it keeps waiting after the boot until the emulator really accepts the driver', async () => {
+  listEmulators.mock.mockImplementation(async () => ['Workshop_1_Pixel_10_API_37_0'])
+  let polls = 0
+  run.mock.mockImplementation((cmd) => {
+    if (cmd === 'adb devices') return 'List of devices attached\n'
+    if (cmd.endsWith('getprop sys.boot_completed')) return ++polls < 3 ? '' : '1'
+    if (cmd.endsWith('getprop init.svc.bootanim')) return 'stopped'
+    if (cmd.endsWith('pm path com.android.settings')) return 'package:/x'
+    if (cmd.endsWith('forward tcp:0 tcp:6790')) return '41234'
+  })
+  assert.equal((await smoke.ensureAndroidDevice()).udid, 'emulator-5554')
+  assert.ok(polls >= 3)
+})
+
+test('an emulator that fails to boot is reported with what the module found out', async () => {
+  listEmulators.mock.mockImplementation(async () => ['Pixel_9'])
+  run.mock.mockImplementation(() => 'List of devices attached\n')
+  waitForEmulator.mock.mockImplementation(async () => {
+    throw new Error('The emulator stopped before it was ready (exit code 1).')
+  })
+  await assert.rejects(smoke.ensureAndroidDevice(), /DEVICE_BOOT_FAILED: The emulator stopped before it was ready/)
 })
 
 test('androidReady only says yes when the emulator accepts the port forwarding of the driver', () => {
@@ -113,9 +145,9 @@ test('androidReady only says yes when the emulator accepts the port forwarding o
   }
 })
 
-test('giving up on an emulator that never finishes booting', async () => {
-  spawn.mock.mockImplementation(() => ({ unref() {} }))
-  run.mock.mockImplementation((cmd) => (cmd === 'emulator -list-avds' ? 'Pixel_9' : 'List of devices attached\n'))
+test('giving up on an emulator that boots but never accepts the driver', async () => {
+  listEmulators.mock.mockImplementation(async () => ['Pixel_9'])
+  run.mock.mockImplementation((cmd) => (cmd === 'adb devices' ? 'List of devices attached\n' : ''))
   const now = mock.method(Date, 'now')
   let t = 0
   now.mock.mockImplementation(() => (t += smoke.DEVICE_BOOT_TIMEOUT / 2))

@@ -1,9 +1,9 @@
-import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { adbBinary, inspect, launchEmulator, listEmulators, waitForBoot as waitForEmulator } from 'start-android-emulator'
 import { bootSimulator, listSimulators, shutdownSimulator, waitForBoot } from 'start-ios-simulator'
 import { run, runFile, runFileAsync } from './shell.mjs'
 
@@ -57,21 +57,27 @@ export async function ensureAndroidDevice({ onStatus = () => {} } = {}) {
   const running = parseAdbDevices(run('adb devices'))
   if (running.length > 0) return { udid: running[0], stop: null }
 
-  const avd = pickAvd((run('emulator -list-avds') ?? '').split('\n').filter(Boolean))
+  const { sdk } = await inspect()
+  const avd = pickAvd((await listEmulators(sdk)) ?? [])
   if (!avd) throw new Error('NO_DEVICE')
 
   onStatus(`No emulator running, starting ${avd} (this takes a minute or two)...`)
-  spawn('emulator', ['-avd', avd, '-no-snapshot-save', '-no-audio'], { detached: true, stdio: 'ignore', shell: process.platform === 'win32' }).unref()
-
-  const deadline = Date.now() + DEVICE_BOOT_TIMEOUT
-  while (Date.now() < deadline) {
-    await sleep(3000)
-    const udid = parseAdbDevices(run('adb devices'))[0]
-    if (udid && androidReady(udid)) {
-      return { udid, stop: () => runFile('adb', ['-s', udid, 'emu', 'kill']) }
-    }
+  const adb = adbBinary(sdk)
+  let udid
+  try {
+    const launched = launchEmulator(sdk, { name: avd, wipeData: false, coldBoot: false, dns: false })
+    udid = (await waitForEmulator(adb, avd, launched, { timeoutMs: DEVICE_BOOT_TIMEOUT })).serial
+  } catch (e) {
+    throw new Error(`DEVICE_BOOT_FAILED: ${e.message}`)
   }
-  throw new Error('DEVICE_BOOT_TIMEOUT')
+
+  // "Booted" is not enough, see androidReady
+  const deadline = Date.now() + DEVICE_BOOT_TIMEOUT
+  while (!androidReady(udid)) {
+    if (Date.now() > deadline) throw new Error('DEVICE_BOOT_TIMEOUT')
+    await sleep(3000)
+  }
+  return { udid, stop: () => runFile(adb, ['-s', udid, 'emu', 'kill']) }
 }
 
 /** Same as ensureAndroidDevice, for the iOS simulator. */
