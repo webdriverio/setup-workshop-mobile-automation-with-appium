@@ -1,0 +1,90 @@
+name: Setup problem
+description: npm run setup or npm run check does not work on my machine
+title: "[Setup] "
+labels: ["setup problem"]
+assignees: ["wswebcreation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sorry that it does not work yet, we will help you. The more you tell us, the faster we can fix it.
+
+        **Before you send this:** run `npm run setup` again, open a **new** terminal if you just installed something, and have a look at the Troubleshooting section of the README.
+
+        **Good to know:** this issue is public. The report file has your computer's user name in its paths, and no passwords or tokens. Remove anything you do not want to share.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Your computer
+      options:
+        - macOS, Apple Silicon (M1 or newer)
+        - macOS, Intel
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: What are you setting up?
+      options:
+        - Android
+        - iOS
+        - Both
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: command
+    attributes:
+      label: What did you run when it went wrong?
+      options:
+        - npm run setup
+        - npm run check
+        - npm install
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead? A screenshot is welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: The report of the check
+      description: |
+        When `npm run check` fails it saves `workshop-check-report.txt` in the folder of this project. Drag that file into this box.
+        No report? Run `npm run check -- --report` to make one.
+    validations:
+      required: false
+  - type: textarea
+    id: output
+    attributes:
+      label: Terminal output
+      description: |
+        Needed when `npm run setup` or `npm install` fails, because they do not make a report. Copy the last 30 lines or so from your terminal.
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: versions
+    attributes:
+      label: Node.js version
+      description: The output of `node -v`
+      placeholder: v24.12.0
+    validations:
+      required: false
+  - type: dropdown
+    id: network
+    attributes:
+      label: Is this a laptop from your company, or are you behind a proxy, firewall or VPN?
+      options:
+        - No
+        - Yes
+        - Not sure
+    validations:
+      required: false

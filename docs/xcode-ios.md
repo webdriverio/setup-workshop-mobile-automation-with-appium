@@ -5,143 +5,162 @@
 
 Xcode is Apple's development environment. We use it for the iOS Simulator, a virtual iPhone that runs on your Mac.
 
-## 1. Install Xcode
+## 1. Install Xcode (the only manual step)
 
-Xcode is a large download (around 15 GB), so start this early and make sure you have enough disk space.
+Xcode is a large download (around 15 GB), so start this early and make sure you have enough disk space (Xcode, the simulator runtime and the simulators need about 30 GB in total).
 
 1. Open the **App Store** on your Mac.
 2. Search for **Xcode** and click **Get** / **Install**.
 3. Wait for it to finish. This can take 30-60 minutes depending on your connection.
+4. **Open Xcode once**. It asks to install extra components, let it do that. Then quit Xcode.
 
 > [!TIP]
-> If the App Store is slow, you can download specific Xcode versions directly from [https://developer.apple.com/download/all/](https://developer.apple.com/download/all/) using a free Apple ID. Look for Xcode 26.x and download the `.xip` file.
+> If the App Store is slow, you can download Xcode directly from [https://developer.apple.com/download/all/](https://developer.apple.com/download/all/) with a free Apple ID. Look for Xcode 27 and download the `.xip` file.
 
-Once installed, **open Xcode at least once**. It will ask you to install additional components the first time. Let it do that.
-
-## 2. Accept the Xcode Licence and Install Components
-
-Some tools need you to accept Apple's licence agreement before they work. Open a terminal and run:
+## 2. Let the setup do the rest
 
 ```bash
-sudo xcodebuild -license accept
+npm run setup
 ```
 
-You'll be asked for your Mac password (it won't show anything while you type, that's normal). Press Enter.
+Choose **iOS**. It:
 
-Then run:
+1. accepts the Xcode licence and installs the Xcode components (asks for your Mac password),
+2. downloads the iOS simulator runtime that matches your Xcode (about 8 GB),
+3. creates the two workshop simulators, `Workshop_1_iPhone_17_Pro_iOS_27_0` and `Workshop_2_iPhone_17_Pro_iOS_27_0`.
+
+You do not have to download iOS yourself, the setup does it in step 2 (it runs `xcodebuild -downloadPlatform iOS -architectureVariant arm64`). This can take a while, depending on your connection, so start it early. If the iOS version is already installed, this step is skipped. If Xcode downloads it but does not list it, the setup registers it for you, see [the known issue](#known-issue-xcode-27-does-not-list-a-downloaded-ios-version).
+
+Start them with [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator), it lists your simulators and starts the one you pick:
 
 ```bash
-xcodebuild -runFirstLaunch
+npx start-ios-simulator
 ```
 
-This installs platform support files. It may take a few minutes and won't show much output while it runs.
-
-## 3. Install Xcode Command Line Tools
-
-The command line tools are a smaller set of development utilities that other tools depend on. Run:
+Or directly:
 
 ```bash
-xcode-select --install
-```
-
-A dialog will appear, click **Install**. If you already have them, you'll see:
-
-```
-xcode-select: error: command line tools are already installed
-```
-
-That's fine, just continue.
-
-Verify everything is pointing to the right place:
-
-```bash
-xcode-select -p
-```
-
-You should see: `/Applications/Xcode.app/Contents/Developer`
-
-If you see a different path (like one pointing to old Command Line Tools), run:
-
-```bash
-sudo xcode-select --switch /Applications/Xcode.app
-```
-
-## 4. Check the iOS Simulator Runtime
-
-Xcode ships with one or two simulator runtimes by default. Check what's installed:
-
-1. Open **Xcode → Settings (⌘,) → Platforms**.
-2. You'll see a list of installed platforms and their download status.
-3. If **iOS 26** is not in the list, click **+** at the bottom and download it.
-
-Or from the terminal:
-
-```bash
-xcodebuild -downloadPlatform iOS
-```
-
-## 5. Create and Start an iOS Simulator
-
-### Using Xcode (recommended)
-
-1. From the menu bar, go to **Xcode → Open Developer Tool → Simulator** (or type `open -a Simulator` in the terminal).
-2. In the Simulator window, go to **File → New Simulator**.
-3. Fill in:
-   - **Name**: something like `iPhone 17 Pro Workshop`
-   - **Device Type**: iPhone 17 Pro
-   - **iOS Version**: iOS 26.x
-4. Click **Create**.
-
-The simulator will boot automatically. You'll see a virtual iPhone appear on your screen.
-
-### Using the command line
-
-List what runtimes are available:
-
-```bash
-xcrun simctl list runtimes
-```
-
-Then create and boot a simulator:
-
-```bash
-xcrun simctl create "iPhone 17 Pro Workshop" "iPhone 17 Pro" "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
-xcrun simctl boot "iPhone 17 Pro Workshop"
+xcrun simctl boot Workshop_1_iPhone_17_Pro_iOS_27_0
 open -a Simulator
 ```
 
-## 6. Verify the Simulator is Running
+Check that it runs:
 
 ```bash
 xcrun simctl list devices | grep Booted
 ```
 
-You should see a line like:
+## Creating a simulator in Xcode yourself
 
+We advise to let `npm run setup` create the simulators, so everyone has the same setup and you avoid the problem below. If you do want to create a simulator in Xcode yourself, this is the normal way:
+
+1. Open **Xcode**, then go to **Xcode → Open Developer Tool → Device Hub**.
+2. Add a new device (**+**).
+3. Select the **OS version** (iOS 27) and the **model** (iPhone 17 Pro).
+4. If the OS is not available yet, download it there and then configure the device.
+
+> [!WARNING]
+> With Xcode 27 this can fail: the iOS version you downloaded does not show up, so you cannot select it. This is a known problem, see [Known issue: Xcode 27 does not list a downloaded iOS version](#known-issue-xcode-27-does-not-list-a-downloaded-ios-version). `npm run setup` works around it.
+
+## Doing it by hand
+
+The setup runs these commands. If it fails, you can run them yourself, one by one.
+
+```bash
+# Xcode must be the active developer directory. You should see /Applications/Xcode.app/Contents/Developer
+xcode-select -p
+sudo xcode-select --switch /Applications/Xcode.app     # only if it points somewhere else
+
+sudo xcodebuild -license accept
+sudo xcodebuild -runFirstLaunch
+
+# Download the iOS simulator runtime. On Apple Silicon Xcode 27 needs -architectureVariant arm64
+xcodebuild -downloadPlatform iOS -architectureVariant arm64
+
+# Is the runtime registered? iOS 27.0 must be in this list.
+xcrun simctl list runtimes
+
+# Create and start a simulator
+xcrun simctl create "Workshop_1_iPhone_17_Pro_iOS_27_0" "iPhone 17 Pro" com.apple.CoreSimulator.SimRuntime.iOS-27-0
+xcrun simctl boot "Workshop_1_iPhone_17_Pro_iOS_27_0"
+open -a Simulator
 ```
-iPhone 17 Pro Workshop (XXXXXXXX-...) (Booted)
+
+You do not need to install the Xcode command line tools separately, Xcode includes them.
+
+## Known issue: Xcode 27 does not list a downloaded iOS version
+
+### What you see
+
+You download iOS 27 in Xcode (Settings → Components, or `xcodebuild -downloadPlatform iOS`), and Xcode says it is installed. But in the Device Hub the iOS version cannot be selected ("No Runtimes Available"), and this command shows nothing:
+
+```bash
+xcrun simctl list runtimes
 ```
+
+### Why
+
+The download is fine, but macOS fails to verify it and never registers it. You can see this here:
+
+```bash
+xcrun simctl runtime list
+# iOS 27.0 (24A434) - <id> (Ready)          <- downloaded
+xcrun simctl runtime verify <id>
+# Signature verification failed: -67054 "a sealed resource is missing or invalid"
+```
+
+No simulator can be created for a runtime that is not registered. We saw this on Xcode 27.0 (27A266a) on Apple Silicon, with iOS 26.5 and 27.0.
+
+### Fix
+
+The download contains a plain `.dmg`. Adding that registers the runtime the old way. `npm run setup` does this for you. By hand:
+
+```bash
+# 1. the folder of the downloaded runtime: the "path" of the iOS 27.0 entry
+xcrun simctl runtime list -j | grep '"path"'
+# 2. add the .dmg in the Restore folder inside it
+xcrun simctl runtime add "<path>/Restore/<something>.dmg"
+# 3. iOS 27.0 must be listed now
+xcrun simctl list runtimes
+```
+
+It costs almost no extra disk space. The old entry stays in `simctl runtime list` as "Unusable - Cryptex Mount Preferred", that is harmless. After this the Device Hub lists iOS 27 as well, and Xcode creates its standard simulators.
+
+Also try `xcodebuild -downloadPlatform iOS -architectureVariant arm64`. Without the variant, Xcode 27 sometimes cannot find the iOS download at all.
+
+### Other reports of the same problem
+
+(all on Apple's developer forums, we found no reaction or fix from Apple):
+
+- [iOS 27 & watchOS 27 Simulator runtimes download but never register](https://developer.apple.com/forums/thread/830152): the cause (-67054) and the `.dmg` fix we use.
+- [Xcode 27 No iOS 27 Simulators](https://developer.apple.com/forums/thread/849096): the same on the release build, "Add Platforms" only lists iOS 26.5 or older. Deleting and downloading again in Settings → Components did not help.
+- [Unable to use, install, or delete the iOS 27 runtime](https://developer.apple.com/forums/thread/830772): the `-architectureVariant arm64` fix.
+
+> [!NOTE]
+> This is a bug in Xcode 27 and it may be fixed in a later Xcode version (or a macOS update). If you have a newer version than 27.0 and the iOS version shows up in the Device Hub, you do not need any of this. The setup checks first and only applies the fix when it is needed.
 
 ## Troubleshooting
+
+- **The iOS version does not show up when adding a device (Xcode 27)**: see [the known issue](#known-issue-xcode-27-does-not-list-a-downloaded-ios-version) below.
+
+- **The runtime download fails or "Get" does nothing in Xcode**: use the terminal command with `-architectureVariant arm64` (see above). Make sure you are signed in with your Apple ID in **Xcode → Settings → Accounts**.
 
 - **Xcode takes forever in the App Store**: try the direct download from the Apple Developer portal (see the tip in step 1).
 
 - **"You do not have permission to install" in the App Store**: make sure you're signed in with your Apple ID. Go to **App Store → Sign In**.
 
-- **Not enough disk space**: Xcode needs about 15 GB for the download and more for the simulator runtimes. Free up space before downloading.
+- **Not enough disk space**: free up space before downloading, you need about 30 GB.
 
 - **`xcrun: error: invalid active developer path`**: run:
   ```bash
   sudo xcode-select --switch /Applications/Xcode.app
   ```
 
-- **Simulator doesn't appear after creating it**: make sure the Simulator app is open (`open -a Simulator`) and the device is booted (`xcrun simctl boot "Device Name"`).
-
-- **Simulator is booted but you see a black screen**: this sometimes happens on first boot. Wait 30 seconds. If it stays black, close the simulator app and reboot the device:
+- **Simulator is booted but you see a black screen**: this sometimes happens on first boot. Wait 30 seconds. If it stays black, close the Simulator app and reboot the device:
   ```bash
-  xcrun simctl shutdown "iPhone 17 Pro Workshop"
-  xcrun simctl boot "iPhone 17 Pro Workshop"
+  xcrun simctl shutdown Workshop_1_iPhone_17_Pro_iOS_27_0
+  xcrun simctl boot Workshop_1_iPhone_17_Pro_iOS_27_0
   open -a Simulator
   ```
 
-- **Old macOS version**: Xcode 26 requires a recent macOS version. If you're on an older version, check which Xcode version supports your macOS at the Apple Developer portal and download that instead.
+- **Old macOS version**: Xcode 27 requires a recent macOS version. If you're on an older version, check which Xcode version supports your macOS at the Apple Developer portal and download that instead. The setup uses the iOS version that belongs to the Xcode you have.

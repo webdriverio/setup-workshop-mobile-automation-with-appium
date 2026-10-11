@@ -13,7 +13,7 @@ Go to [https://code.visualstudio.com](https://code.visualstudio.com) and click t
 2. Drag **Visual Studio Code** into your **Applications** folder. Don't run it directly from Downloads.
 3. Open VS Code from your Applications folder. If macOS warns you that it was downloaded from the internet, click **Open**.
 
-**Make the `code` terminal command work:**
+### Make the `code` terminal command work
 
 The `code` command lets you open files and folders in VS Code directly from the terminal (e.g. `code .` to open the current folder). To enable it:
 
@@ -26,7 +26,7 @@ The `code` command lets you open files and folders in VS Code directly from the 
    code --version
    ```
 
-Alternatively, the setup check script (`npm run check`) will offer to do this for you automatically.
+Alternatively, run `npm run setup` and choose **Visual Studio Code** in the menu. It adds the `code` command to your `PATH` for you.
 
 </details>
 
@@ -43,14 +43,19 @@ Alternatively, the setup check script (`npm run check`) will offer to do this fo
    code --version
    ```
 
-If you forgot to check "Add to PATH", the setup check script (`npm run check`) will show you exactly how to add it manually.
+If you forgot to check "Add to PATH", run the installer again and check it this time. Or add the folder yourself:
+
+1. Open **Settings → System → About → Advanced system settings → Environment Variables**.
+2. Under **User variables**, select **Path** and click **Edit**.
+3. Click **New** and add `%LOCALAPPDATA%\Programs\Microsoft VS Code\bin`.
+4. Click **OK** on all dialogs and open a new terminal.
 
 </details>
 
 <details>
 <summary><strong>Linux</strong></summary>
 
-**Debian / Ubuntu:**
+### Debian / Ubuntu
 
 ```bash
 sudo apt install wget gpg
@@ -60,7 +65,7 @@ echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] h
 sudo apt update && sudo apt install code
 ```
 
-**Fedora / RHEL:**
+### Fedora / RHEL
 
 ```bash
 sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -90,7 +95,7 @@ Extensions add extra features to VS Code. Install these two before the workshop:
 | **Markdown Preview Enhanced** | Yiyi Wang | Preview markdown files (like this README) directly in VS Code |
 | **Pretty TypeScript Errors** | yoavbls | Makes TypeScript error messages readable instead of walls of red text |
 
-**To install:**
+### To install
 
 1. Open VS Code.
 2. Click the **Extensions** icon in the left sidebar (it looks like four squares, or press **⌘/Ctrl + Shift + X**).
@@ -107,7 +112,8 @@ code --install-extension yoavbls.pretty-ts-errors
 
 - **`code: command not found`**: the `code` CLI wasn't added to your PATH during install.
   - macOS: open VS Code → **⌘ + Shift + P** → type `Shell Command` → click **Install 'code' command in PATH**
-  - Windows: see the exact steps in the check script output when you run `npm run check`
+  - macOS (alternative): run `npm run setup` and choose **Visual Studio Code**
+  - Windows: run the installer again with **Add to PATH** checked, or add the folder yourself, see the Windows steps above
   - Linux: the package install should handle this automatically. If not, check that `/usr/bin/code` exists and that `/usr/bin` is in your PATH.
 
 - **VS Code opens but shows a blank window**: try closing it and opening it again. If it keeps happening, go to **Help → Toggle Developer Tools** and look for errors in the Console tab.

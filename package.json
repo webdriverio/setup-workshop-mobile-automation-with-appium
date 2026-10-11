@@ -4,14 +4,32 @@
   "description": "Environment health check for the Appium + WebdriverIO workshop",
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-setup.mjs"
+    "check": "node scripts/check-setup.mjs",
+    "setup": "node scripts/setup.mjs",
+    "test": "node --experimental-test-module-mocks --test \"test/**/*.test.mjs\"",
+    "test:watch": "node --experimental-test-module-mocks --test --watch \"test/**/*.test.mjs\"",
+    "coverage": "node test/run-coverage.mjs",
+    "prepare": "node scripts/install-hooks.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "devDependencies": {
-    "appium": "^3.3.1",
-    "appium-uiautomator2-driver": "^7.1.2",
-    "appium-xcuitest-driver": "^11.0.1"
+    "@inquirer/prompts": "^8.7.3",
+    "@wdio/appium-service": "^10.0.2",
+    "@wdio/cli": "^10.0.2",
+    "@wdio/globals": "^10.0.2",
+    "@wdio/local-runner": "^10.0.2",
+    "@wdio/mocha-framework": "^10.0.1",
+    "@wdio/spec-reporter": "^10.0.1",
+    "appium": "^3.8.0",
+    "appium-uiautomator2-driver": "^8.7.0",
+    "appium-xcuitest-driver": "^12.16.0",
+    "start-android-emulator": "^4.1.2",
+    "start-ios-simulator": "^2.0.0",
+    "webdriverio": "^10.0.2"
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1"
   }
 }

@@ -1,0 +1,7 @@
+#!/bin/sh
+# Run the unit tests before every push. Skip once with: git push --no-verify
+echo "Running the tests before pushing..."
+npm test --silent || {
+  echo "Tests failed, push cancelled. Fix them, or skip once with: git push --no-verify"
+  exit 1
+}
