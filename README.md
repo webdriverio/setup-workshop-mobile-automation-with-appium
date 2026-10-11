@@ -1,9 +1,33 @@
+<p align="center">
+  <img src="docs/images/wdio-robot.svg" alt="The WebdriverIO robot" width="160">
+</p>
+
 # Workshop Setup, Making Sense of Mobile Automation with Appium and WebdriverIO
+
+## Welcome!
+
+Hi, we are the WebdriverIO team, and we are happy you are joining us.
+
+A day of mobile automation goes a lot better when every laptop is ready at the start. So we made this repository: it installs what is missing, and then proves with a real test that your machine can run the workshop. You will work with WebdriverIO v10 and Appium, on an Android emulator and, on a Mac, an iOS simulator.
+
+Thank you for taking the time to prepare. It means we spend the day on the fun part: writing tests and watching them run on a phone. Please do the setup at home, not on the conference wifi. The downloads are big.
+
+WebdriverIO and Appium are open source projects, and they exist because people in their communities build and maintain them. Thank you to everyone who does that, and to everyone who answers questions in the issue trackers and on Discord. This workshop stands on their work.
+
+See you there.
+
+---
 
 Before the workshop starts, make sure your machine is set up correctly. Depending on your download speed this takes **30-60 minutes**, so do this **before you arrive**.
 
 > [!IMPORTANT]
-> The workshop is packed and we don't have time to troubleshoot installation issues on the day itself. Please make sure everything is set up and the check script passes **before you arrive**. If you get stuck, reach out in advance so we can help.
+> The workshop is packed and we don't have time to troubleshoot installation issues on the day itself. Please make sure everything is set up and the check script passes **before you arrive**. If you get stuck, [open an issue](https://github.com/webdriverio/setup-workshop-mobile-automation-with-appium/issues/new/choose) in advance so we can help, see [Something fails and you cannot fix it?](#something-fails-and-you-cannot-fix-it).
+
+> [!NOTE]
+> **Emulators and simulators are the core of the workshop.** This setup prepares them, and `npm run check` tests them. Real devices are not configured in the workshop, but you can try them at home afterwards.
+>
+> - **Android:** a real phone will probably work too. Turn on developer options (Settings, About phone, tap the build number 7 times), turn on **USB debugging** in them, connect the phone with a cable, accept the question on the phone, and check that it shows up as `device` in `adb devices`. `npm run check` does not test a real phone.
+> - **iOS:** simulators only. Real iPhones need code signing and certificates, which would take too much time, so we do not cover them.
 
 > [!NOTE]
 > This setup repository has its own copy of Appium and the drivers, only to test that your machine works. The workshop project itself, with its own dependencies, is something we set up together during the workshop.
@@ -20,6 +44,8 @@ npm run check   # proves it works by running a small test on your emulator/simul
 ```
 
 Both are safe to run as often as you like. `npm run setup` is the one that changes your machine, and it continues where it left off. `npm run check` only looks: it never changes anything, and for everything that is missing it tells you to run `npm run setup`.
+
+`npm run setup` and `npm run check` are built on top of two open source tools: [start-android-emulator](https://github.com/wswebcreation/start-android-emulator) and [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator). They do the work of installing the Android SDK, the iOS runtime and the emulators and simulators, and you can keep using them after the workshop, see [5. Android](#start-the-emulators) and [6. iOS](#start-the-simulators).
 
 Big downloads (the Android SDK, the demo apps) continue where they stopped when your connection drops, so a bad wifi does not mean starting over.
 
@@ -275,13 +301,29 @@ The script finds and reuses them. It only downloads what is missing, and it only
 
 ### Start the emulators
 
-Use [start-android-emulator](https://github.com/wswebcreation/start-android-emulator), it lists your emulators and starts the ones you pick:
+Install [start-android-emulator](https://github.com/wswebcreation/start-android-emulator) once, globally. It is the one-stop shop for Android emulators, and `npm run setup` is built on top of it:
 
 ```bash
-npx start-android-emulator
+npm install -g start-android-emulator
 ```
 
-Or start one directly:
+Then:
+
+| Command | What it does |
+|---|---|
+| `start-android-emulator` | Pick an emulator from a list and start it. It waits until the emulator has booted and leaves it running, so run it twice for the two workshop emulators. |
+| `start-android-emulator Workshop_1_Pixel_10_API_37_0` | Start an emulator by name |
+| `start-android-emulator --check` | See what is set up and what is missing, and which emulators you have |
+| `start-android-emulator --setup` | Install what is missing (Java, the Android SDK, the emulator) |
+| `start-android-emulator --create`, `--delete` | Create or delete emulators |
+| `start-android-emulator --update`, `--prune` | Keep the SDK up to date, and remove what no emulator uses |
+
+Use `start-android-emulator --help` for all options. You can also try it without installing: `npx start-android-emulator` does the same.
+
+> [!TIP]
+> Global packages belong to one Node.js version. If you switch versions with `nvm`, install the package again.
+
+Do you prefer to go bare metal? The tools of the Android SDK do the same. Start one emulator per terminal:
 
 ```bash
 emulator -avd Workshop_1_Pixel_10_API_37_0
@@ -299,7 +341,7 @@ adb devices
 
 ## 6. iOS (macOS only)
 
-iOS automation requires Xcode, which is only available on macOS. If you're on Windows or Linux you'll focus on Android during the iOS parts of the workshop.
+iOS automation requires Xcode, which is only available on macOS. If you're on Windows or Linux you'll focus on Android during the iOS parts of the workshop. We use iOS **simulators** only, real iPhones are not part of the workshop because of the signing and certificate challenges.
 
 You install **Xcode** yourself from the App Store (≈ 15 GB, download it in advance and open it once). Then run `npm run setup` and choose **iOS**. It accepts the Xcode licence (asks for your Mac password), downloads the iOS simulator runtime (≈ 8 GB), creates the two workshop simulators and downloads the iOS demo app (15 MB).
 
@@ -310,18 +352,35 @@ See [docs/xcode-ios.md](docs/xcode-ios.md) for the details and for what to do wh
 
 ### Start the simulators
 
-Use [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator), it lists your simulators and starts the one you pick:
+Install [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator) once, globally. It is the one-stop shop for iOS simulators, and `npm run setup` is built on top of it:
 
 ```bash
-npx start-ios-simulator
+npm install -g start-ios-simulator
 ```
 
-Or start one directly (the Simulator app opens the booted devices):
+Then:
+
+| Command | What it does |
+|---|---|
+| `start-ios-simulator` | Pick a simulator from a list and start it. It opens in a window of its own, waits until it has booted and leaves it running, so run it twice for the two workshop simulators. |
+| `start-ios-simulator Workshop_1_iPhone_17_Pro_iOS_27_0` | Start a simulator by name |
+| `start-ios-simulator --check` | See what is set up and what is missing, and which simulators you have |
+| `start-ios-simulator --setup` | Install what is missing (the Xcode licence, the iOS runtime) |
+| `start-ios-simulator --create`, `--delete` | Create or delete simulators |
+| `start-ios-simulator --prune` | Remove iOS runtimes that no simulator uses |
+
+Use `start-ios-simulator --help` for all options. You can also try it without installing: `npx start-ios-simulator` does the same.
+
+> [!TIP]
+> Global packages belong to one Node.js version. If you switch versions with `nvm`, install the package again.
+
+Do you prefer to go bare metal? Xcode's own tools do the same. Start the simulator:
 
 ```bash
 xcrun simctl boot Workshop_1_iPhone_17_Pro_iOS_27_0
-open -a Simulator
 ```
+
+Then open it. With Xcode 26 or older: `open -a Simulator`. Xcode 27 replaced the Simulator app by Device Hub: **Xcode → Open Developer Tool → Device Hub**.
 
 Confirm it is running:
 
@@ -367,7 +426,15 @@ The check is also a warm-up. The first iOS session builds a helper app (WebDrive
 
 ### Something fails and you cannot fix it?
 
-When the check fails it saves a report with everything it found (your system, the output above and the Appium log) in `workshop-check-report.txt` in this folder. Send that file to the trainer, the address will be shared by the conference. The file contains paths on your computer (with your user name) and no passwords or tokens. Want a report when everything passes too? Run `npm run check -- --report`.
+When the check fails it saves a report with everything it found (your system, the output above and the Appium log) in `workshop-check-report.txt` in this folder. Want a report when everything passes too? Run `npm run check -- --report`.
+
+Then open an issue, we will help you:
+
+1. Go to [New issue](https://github.com/webdriverio/setup-workshop-mobile-automation-with-appium/issues/new/choose) and choose **Setup problem**. The form asks for what we need.
+2. Drag `workshop-check-report.txt` into the form. If `npm run setup` is what fails, there is no report: copy the last lines of your terminal into the form instead.
+3. Mention **@wswebcreation** in the issue, so it reaches Wim right away. (The form also assigns it to Wim.)
+
+The issue is public. The report has paths on your computer (with your user name) and no passwords or tokens, remove anything you do not want to share.
 
 ### The Android test fails the first time?
 
@@ -387,7 +454,7 @@ Run `npm run setup` again first. It re-checks everything and fixes what it can.
 | `adb` or `emulator` not found | Open a **new** terminal after `npm run setup`, then run `npm run setup` again |
 | Download fails or is very slow | Run `npm run setup` again, it starts the missing download from the beginning |
 | `Cannot find any free port in range 8200..8299` or `EADDRNOTAVAIL` during the check | The emulator was not ready yet. Run `npm run check -- --android` again, see [7. Verify your setup](#7-verify-your-setup) |
-| The check fails and I cannot fix it | Send `workshop-check-report.txt` to the trainer, see [7. Verify your setup](#7-verify-your-setup) |
+| The check fails and I cannot fix it | Open an issue with `workshop-check-report.txt`, see [Something fails and you cannot fix it?](#something-fails-and-you-cannot-fix-it) |
 | Download fails because of a company firewall or proxy | See [Behind a company proxy](#behind-a-company-proxy-or-firewall) |
 | Xcode issues | [docs/xcode-ios.md](docs/xcode-ios.md) |
 
@@ -405,7 +472,7 @@ $env:HTTPS_PROXY = "http://proxy.company.com:8080"
 
 `npm run check` tells you at the top which download servers it cannot reach. If the proxy is set and they still fail, ask your IT department to allow them (`dl.google.com`, `android.googlesource.com`, `api.adoptium.net`, `github.com`, `objects.githubusercontent.com` and `registry.npmjs.org`), or use another network, like a phone hotspot. This is not tested with every kind of proxy, so tell us if it does not work for you.
 
-Still stuck? Reach out before the workshop so we can sort it out in advance.
+Still stuck? [Open an issue](https://github.com/webdriverio/setup-workshop-mobile-automation-with-appium/issues/new/choose) before the workshop so we can sort it out in advance, see [Something fails and you cannot fix it?](#something-fails-and-you-cannot-fix-it).
 
 ---
 
@@ -415,3 +482,15 @@ You do **not** need to install any of the following ahead of time:
 
 - The workshop project itself and its dependencies
 - Appium Inspector
+
+---
+
+## Thank you, and see you soon!
+
+Thank you for taking the time to get your machine ready. It really helps, and it means we can spend the day on what we are all here for.
+
+We can't wait to meet you and to see your first test run on a phone.
+
+See you soon!
+
+Grtz from the whole WebdriverIO team

@@ -158,7 +158,7 @@ const HINTS = [
 export function explainFailure(error, platform) {
   const text = `${error?.message ?? error}`
   const hit = HINTS.find(([pattern]) => pattern.test(text))
-  return hit ? hit[1](platform) : 'Something went wrong while opening the Settings app. Send the lines above to the workshop trainer.'
+  return hit ? hit[1](platform) : 'Something went wrong while opening the Settings app. Open an issue and add the report, see the README.'
 }
 
 /** The last lines of the Appium log that say what went wrong. */

@@ -252,9 +252,9 @@ test('explainFailure gives plain advice for the failures we know', () => {
 })
 
 test('explainFailure always returns a line, even for errors it does not know', () => {
-  assert.match(smoke.explainFailure(new Error('something odd'), 'android'), /trainer/)
-  assert.match(smoke.explainFailure('plain string', 'android'), /trainer/)
-  assert.match(smoke.explainFailure(undefined, 'android'), /trainer/)
+  assert.match(smoke.explainFailure(new Error('something odd'), 'android'), /issue/)
+  assert.match(smoke.explainFailure('plain string', 'android'), /issue/)
+  assert.match(smoke.explainFailure(undefined, 'android'), /issue/)
 })
 
 test('appiumErrorLines keeps the last lines that look like an error', () => {

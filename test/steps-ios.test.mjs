@@ -184,9 +184,10 @@ test('setupIos on a ready machine only prints how to start the simulators', asyn
   assert.equal(await setupIos(), true)
   const text = output.join('\n')
   assert.match(text, /Everything for iOS is already set up/)
-  assert.match(text, /npx start-ios-simulator/)
+  assert.match(text, /npm install -g start-ios-simulator/)
+  assert.match(text.replace(/\x1b\[[0-9;]*m/g, ''), /^\s*start-ios-simulator$/m)
   assert.match(text, new RegExp(`xcrun simctl boot ${NAMES[1]}`))
-  assert.match(text, /open -a Simulator/)
+  assert.match(text, /open -a Simulator \(Xcode 26 and older\) or Device Hub \(Xcode 27\)/)
 })
 
 test('setupIos stops at the first step that fails', async () => {

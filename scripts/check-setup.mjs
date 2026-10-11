@@ -106,7 +106,7 @@ if (hasErrors) {
 if (hasErrors || process.argv.includes('--report')) {
   await writeReport(REPORT_FILE)
   say(`\nA report with all the details was saved to:\n  ${REPORT_FILE}`)
-  if (hasErrors) say('Cannot fix it? Send this file to the trainer, the address will be shared by the conference.\n')
+  if (hasErrors) say('Cannot fix it? Open an issue and drag this file into it, we will help you. The README shows how (Something fails and you cannot fix it?).\n')
 }
 
 if (hasErrors) process.exit(1)

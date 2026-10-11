@@ -67,6 +67,8 @@ test('when Android is ready, the start hint tells how to start both emulators', 
   assert.equal(await setupAndroid(), true)
   const text = output.join('\n')
   assert.match(text, /Start the emulators/)
+  assert.match(text, /npm install -g start-android-emulator/)
+  assert.match(text.replace(/\x1b\[[0-9;]*m/g, ''), /^\s*start-android-emulator$/m)
   assert.match(text, /emulator -avd Workshop_1/)
   assert.match(text, /emulator -avd Workshop_2/)
   assert.match(text, /demo app of the workshop is in \/downloads\/appium-workshop-apps/)

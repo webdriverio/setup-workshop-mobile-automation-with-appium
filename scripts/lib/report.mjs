@@ -3,7 +3,7 @@ import { arch, platform, release } from 'node:os'
 
 /**
  * Everything the check shows is also kept here, so a failed run can be saved as one text file
- * that the attendee sends to the trainer.
+ * that the attendee attaches to an issue.
  */
 
 const lines = []

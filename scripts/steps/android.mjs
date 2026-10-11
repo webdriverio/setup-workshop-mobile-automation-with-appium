@@ -28,9 +28,11 @@ export async function planAndroidSteps() {
 /** Tell people how to start the emulators once everything is in place. */
 function printStartHint(newTerminal) {
   console.log(`\n${bold('Start the emulators')}${newTerminal ? ' (in a new terminal, so the new settings apply)' : ''}\n`)
-  info('Pick the emulators from a list:')
-  info('  npx start-android-emulator')
-  info('Or start them directly, one per terminal:')
+  info('Install the tool that this setup is built on, once:')
+  info('  npm install -g start-android-emulator')
+  info('Then pick the emulators from a list (run it twice for two emulators):')
+  info('  start-android-emulator')
+  info('Or go bare metal, one emulator per terminal:')
   AVD_NAMES.forEach((name) => info(`  emulator -avd ${name}`))
   info('Check that they are running with: adb devices')
   appHint()
