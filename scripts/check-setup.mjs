@@ -10,6 +10,7 @@
  */
 
 import { fileURLToPath } from 'node:url'
+import { inspect as inspectAndroid, relaunchWithProxy } from 'start-android-emulator'
 import { checkApp } from './checks/apps.mjs'
 import { checkAcceleration, checkAndroidSdk, checkEmulators, checkJava } from './checks/android.mjs'
 import { checkXcode, checkSimulators } from './checks/ios.mjs'
@@ -17,7 +18,6 @@ import { checkDisk, checkMemory, checkNetwork } from './checks/machine.mjs'
 import { checkSessions } from './checks/session.mjs'
 import { checkGit, checkNode, checkNpm, checkVsCode } from './checks/tools.mjs'
 import { printTeamMessage } from './lib/banner.mjs'
-import { relaunchWithProxy } from './lib/network.mjs'
 import { failedItems, writeReport } from './lib/report.mjs'
 import { IS_MAC } from './lib/shell.mjs'
 import { ensureAndroidDevice, ensureIosDevice } from './lib/smoke.mjs'
@@ -61,11 +61,13 @@ await check('npm', checkNpm)
 await check('Visual Studio Code', checkVsCode)
 
 if (android) {
+  // One look at the machine for all the Android checks
+  const state = await inspectAndroid()
   header('Java')
-  await check('Java', checkJava)
+  await check('Java', () => checkJava(state))
   header('Android')
-  await check('Android SDK', checkAndroidSdk)
-  await check('Android emulators', checkEmulators)
+  await check('Android SDK', () => checkAndroidSdk(state))
+  await check('Android emulators', () => checkEmulators(state))
   await check('acceleration', checkAcceleration)
   await check('Android demo app', () => checkApp('android'))
 }

@@ -7,6 +7,7 @@ export function appStep(platform) {
   const label = platform === 'android' ? 'Android' : 'iOS'
   const megabytes = Math.round(APPS[platform].size / 1024 / 1024)
   return {
+    id: `app-${platform}`,
     title: `${label} demo app`,
     description: `The app we test in the workshop (${megabytes} MB). It is saved in ${appsDir()}, so you do not have to download it on the day.`,
     done: hasApp(platform),

@@ -7,7 +7,7 @@ const persistEnv = mock.fn(() => '~/.zshrc')
 const applyToProcess = mock.fn()
 mock.module('../scripts/lib/system.mjs', { namedExports: { fileExists } })
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run } })
-mock.module('../scripts/lib/env.mjs', { namedExports: { persistEnv, applyToProcess } })
+mock.module('start-android-emulator', { namedExports: { persistEnv, applyToProcess } })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { VSCODE_MAC_BIN, needsCodeCommand, planVscode, setupVscode } = await import('../scripts/steps/vscode.mjs')
 

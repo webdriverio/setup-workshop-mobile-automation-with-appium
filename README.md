@@ -42,7 +42,7 @@ The workshop runs **two Android emulators** at the same time, so your computer n
 | **Free disk space** | 20 GB | 30 GB |
 | **CPU** | 4 cores | 8 cores |
 
-Each emulator uses 2 GB of memory and 4 CPU cores while it runs, and up to 6 GB of disk space on top of the Android tools (about 6 GB). On macOS, Xcode and the iOS simulator need a lot more disk space (Xcode alone is ≈ 15 GB).
+Each emulator uses 2 GB of memory and 4 CPU cores while it runs, and 1 to 2 GB of disk space for its own data. The Android tools themselves take about 6 GB. On macOS, Xcode and the iOS simulator need a lot more disk space (Xcode alone is ≈ 15 GB).
 
 The emulators also need hardware acceleration, otherwise they are far too slow to use. Check the one for your system:
 

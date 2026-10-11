@@ -8,7 +8,7 @@
  *            --dry-run   show what would change without changing anything
  */
 
-import { relaunchWithProxy } from './lib/network.mjs'
+import { relaunchWithProxy } from 'start-android-emulator'
 import { runWizard } from './wizard.mjs'
 
 // Behind a company proxy the downloads need to go through it

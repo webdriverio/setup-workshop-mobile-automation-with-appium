@@ -1,4 +1,4 @@
-import { applyToProcess, persistEnv } from '../lib/env.mjs'
+import { applyToProcess, persistEnv } from 'start-android-emulator'
 import { dry, runPlan } from '../lib/plan.mjs'
 import { run } from '../lib/shell.mjs'
 import { fileExists } from '../lib/system.mjs'

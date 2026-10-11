@@ -1,39 +1,37 @@
-import { AVD_NAMES, MIN_JAVA, androidEnvGaps, detectJava, detectSdkPath, javaMajor, platformToolsDirs } from '../lib/android.mjs'
-import { applyToProcess } from '../lib/env.mjs'
-import { run } from '../lib/shell.mjs'
+import { adbBinary } from 'start-android-emulator'
+import { AVD_NAMES } from '../lib/android.mjs'
+import { run, runFile } from '../lib/shell.mjs'
 import { fileExists } from '../lib/system.mjs'
 import { fail, info, ok, warn } from '../lib/ui.mjs'
 
-/** Read-only checks for Android. Fixing is the job of `npm run setup`, so every failure points there. */
+/**
+ * Read-only checks for Android, on what `inspect()` of start-android-emulator found.
+ * Fixing is the job of `npm run setup`, so every failure points there.
+ */
 
 const FIX = 'Run: npm run setup, then open a new terminal and re-run this check.'
 
-export function checkJava() {
+export function checkJava({ env, java }) {
   const home = process.env.JAVA_HOME
-  if (!androidEnvGaps().vars.includes('JAVA_HOME')) {
-    ok(`JAVA_HOME = ${home} (Java ${javaMajor(home)})`)
+  if (!env.vars.includes('JAVA_HOME')) {
+    ok(`JAVA_HOME = ${home}${java?.home === home ? ` (Java ${java.major})` : ''}`)
     return true
   }
 
-  const major = javaMajor(home)
   if (!home) fail('JAVA_HOME is not set')
-  else if (major === null) fail(`JAVA_HOME is set to "${home}" but no java was found there`)
-  else fail(`JAVA_HOME points to Java ${major}, Appium needs Java ${MIN_JAVA} or newer`)
+  else fail(`JAVA_HOME is set to "${home}" but there is no Java 17 or newer there, Appium needs it`)
 
-  const found = detectJava()
-  if (found) info(`Java ${found.major} is available at ${found.home}`)
+  if (java) info(`Java ${java.major} is available at ${java.home}`)
   info(FIX)
   return false
 }
 
-export function checkAndroidSdk() {
-  const sdk = detectSdkPath()
-  const { vars, pathMissing } = androidEnvGaps()
+export function checkAndroidSdk({ env, sdk, sdkFound }) {
   let passed = true
 
   const home = process.env.ANDROID_HOME
-  if (vars.includes('ANDROID_HOME')) {
-    fail(sdk ? `ANDROID_HOME is not set, but an Android SDK exists at ${sdk}` : 'ANDROID_HOME is not set and no Android SDK was found')
+  if (env.vars.includes('ANDROID_HOME')) {
+    fail(sdkFound ? `ANDROID_HOME is not set, but an Android SDK exists at ${sdk}` : 'ANDROID_HOME is not set and no Android SDK was found')
     info(FIX)
     passed = false
   } else if (!fileExists(home)) {
@@ -44,18 +42,17 @@ export function checkAndroidSdk() {
     ok(`ANDROID_HOME = ${home}`)
   }
 
-  if (pathMissing) {
+  if (env.pathMissing) {
     fail('adb and the emulator are not in your PATH')
     info(FIX)
     passed = false
   }
 
-  // Look further with the SDK we found, so the next checks tell the truth about the tools themselves
-  if (!passed && sdk) applyToProcess({ vars: { ANDROID_HOME: sdk }, paths: platformToolsDirs(sdk) })
-
-  const adb = run('adb --version')
-  if (adb) {
-    ok(`adb, ${adb.split('\n')[0]}`)
+  // Ask the adb in the SDK, so this tells the truth about the tool itself even when the PATH is not right yet
+  const adb = adbBinary(sdk)
+  const version = adb && runFile(adb, ['--version']).output.split('\n')[0]
+  if (version) {
+    ok(`adb, ${version}`)
   } else {
     fail('adb not found')
     info(FIX)
@@ -64,16 +61,7 @@ export function checkAndroidSdk() {
   return passed
 }
 
-export function checkEmulators() {
-  const output = run('emulator -list-avds')
-  if (output === null) {
-    fail('emulator not found')
-    info(FIX)
-    return false
-  }
-
-  // Names never contain spaces, other lines are warnings of the emulator
-  const avds = output.split('\n').map((line) => line.trim()).filter((line) => line && !/\s/.test(line))
+export function checkEmulators({ avds }) {
   const missing = AVD_NAMES.filter((name) => !avds.includes(name))
   if (missing.length === 0) {
     ok(`Workshop emulators: ${AVD_NAMES.join(', ')}`)
