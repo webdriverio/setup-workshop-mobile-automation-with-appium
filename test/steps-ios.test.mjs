@@ -1,198 +1,75 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, mock, test } from 'node:test'
 
-const lib = {
-  detectXcode: mock.fn(), simulatorSdkVersion: mock.fn(), licenseAccepted: mock.fn(), firstLaunchDone: mock.fn(),
-  acceptLicenseAndInstallComponents: mock.fn(), hasRuntime: mock.fn(), downloadRuntime: mock.fn(),
-  registerDownloadedRuntime: mock.fn(), listSimulators: mock.fn(), createSimulator: mock.fn(),
-}
+const configure = mock.fn()
+const inspect = mock.fn(async () => ({ sdkVersion: '27.0' }))
+const planIos = mock.fn()
+const runPlan = mock.fn()
+mock.module('start-ios-simulator', { namedExports: { configure, inspect, planIos, runPlan } })
 const NAMES = ['Workshop_1_iPhone_17_Pro_iOS_27_0', 'Workshop_2_iPhone_17_Pro_iOS_27_0']
-mock.module('../scripts/lib/ios.mjs', { namedExports: { ...lib, IPHONE_MODEL: 'iPhone 17 Pro', simulatorNames: () => NAMES } })
-const apps = { hasApp: mock.fn(), downloadApp: mock.fn() }
+const target = { version: '27.0', simulators: NAMES.map((name) => ({ name, device: 'iPhone 17 Pro' })) }
+const workshopTarget = mock.fn(() => target)
+mock.module('../scripts/lib/ios.mjs', { namedExports: { workshopTarget } })
+const apps = { hasApp: mock.fn(() => false), downloadApp: mock.fn() }
 mock.module('../scripts/lib/apps.mjs', {
   namedExports: { ...apps, appsDir: () => '/downloads/appium-workshop-apps', APPS: { android: { size: 123595826 }, ios: { size: 15981903 } } },
 })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
-const { planIos, setupIos } = await import('../scripts/steps/ios.mjs')
+const { planIosSteps, setupIos } = await import('../scripts/steps/ios.mjs')
 
-const [XCODE, LICENCE, RUNTIME, SIMULATORS, APP] = [0, 1, 2, 3, 4]
+const moduleSteps = () => ['xcode', 'license', 'runtime', 'simulators'].map((id) => ({ id, title: id, description: `the ${id} step`, done: false }))
 let output
-
-const readyMachine = () => {
-  lib.detectXcode.mock.mockImplementation(() => ({ version: '27.0', path: '/Applications/Xcode.app/Contents/Developer' }))
-  lib.simulatorSdkVersion.mock.mockImplementation(() => '27.0')
-  lib.licenseAccepted.mock.mockImplementation(() => true)
-  lib.firstLaunchDone.mock.mockImplementation(() => true)
-  lib.acceptLicenseAndInstallComponents.mock.mockImplementation(() => true)
-  lib.hasRuntime.mock.mockImplementation(() => true)
-  lib.downloadRuntime.mock.mockImplementation(() => true)
-  lib.registerDownloadedRuntime.mock.mockImplementation(() => false)
-  lib.listSimulators.mock.mockImplementation(() => NAMES)
-  lib.createSimulator.mock.mockImplementation(() => ({ output: '', exitCode: 0 }))
-  apps.hasApp.mock.mockImplementation(() => true)
-  apps.downloadApp.mock.mockImplementation(async () => '/downloads/appium-workshop-apps/app')
-}
-const withoutXcode = () => {
-  readyMachine()
-  lib.detectXcode.mock.mockImplementation(() => null)
-  lib.simulatorSdkVersion.mock.mockImplementation(() => null)
-  lib.hasRuntime.mock.mockImplementation(() => false)
-  apps.hasApp.mock.mockImplementation(() => false)
-}
 
 beforeEach(() => {
   output = []
-  mock.method(console, 'log', (line) => output.push(line))
-  for (const fn of [...Object.values(lib), ...Object.values(apps)]) fn.mock.resetCalls()
+  mock.method(console, 'log', (line = '') => output.push(line))
+  for (const fn of [configure, inspect, planIos, runPlan, workshopTarget]) fn.mock.resetCalls()
+  planIos.mock.mockImplementation(moduleSteps)
+  runPlan.mock.mockImplementation(async () => ({ ok: true, applied: [], declined: false }))
   FLAGS.yes = true
   FLAGS.dryRun = false
-  readyMachine()
 })
 afterEach(() => mock.restoreAll())
 
-test('on a machine that is ready, every step is done', () => {
-  assert.ok(planIos().every((s) => s.done))
+test('the plan is made by the module, for the workshop target, on what it found on this machine', async () => {
+  await planIosSteps()
+  assert.deepEqual(workshopTarget.mock.calls[0].arguments, [{ sdkVersion: '27.0' }])
+  assert.deepEqual(planIos.mock.calls[0].arguments, [{ sdkVersion: '27.0' }, target])
 })
 
-test('without Xcode nothing else can be done, and nothing else is inspected', () => {
-  withoutXcode()
-  const steps = planIos()
-  assert.ok(steps.every((s) => !s.done))
-  assert.equal(lib.licenseAccepted.mock.callCount(), 0)
-  assert.equal(lib.listSimulators.mock.callCount(), 0)
-  assert.match(steps[RUNTIME].title, /^iOS simulator runtime$/)
-  assert.match(steps[SIMULATORS].description, /iOS of your Xcode/)
+test('the demo app comes after the module steps, which stay as they are', async () => {
+  const steps = await planIosSteps()
+  assert.deepEqual(steps.map((s) => s.id), ['xcode', 'license', 'runtime', 'simulators', 'app-ios'])
+  assert.equal(steps[0].title, 'xcode')
 })
 
-test('the licence step is only done when the licence is accepted and the components are installed', () => {
-  lib.licenseAccepted.mock.mockImplementation(() => false)
-  assert.equal(planIos()[LICENCE].done, false)
-  readyMachine()
-  lib.firstLaunchDone.mock.mockImplementation(() => false)
-  assert.equal(planIos()[LICENCE].done, false)
+test('the simulators step is named the way the workshop talks about it', async () => {
+  const simulators = (await planIosSteps()).find((s) => s.id === 'simulators')
+  assert.equal(simulators.title, '2 workshop simulators')
+  assert.equal(simulators.description, 'the simulators step')
 })
 
-test('the runtime and simulators are named after the iOS version of Xcode', () => {
-  lib.hasRuntime.mock.mockImplementation(() => false)
-  const steps = planIos()
-  assert.equal(steps[RUNTIME].title, 'iOS 27.0 simulator runtime')
-  assert.equal(steps[RUNTIME].done, false)
-  assert.equal(lib.listSimulators.mock.callCount(), 0, 'no simulators can exist without the runtime')
-  assert.match(steps[SIMULATORS].description, /iPhone 17 Pro on iOS 27.0/)
-})
-
-test('a missing simulator is reported by name', () => {
-  lib.listSimulators.mock.mockImplementation(() => [NAMES[0]])
-  const steps = planIos()
-  assert.equal(steps[SIMULATORS].done, false)
-  assert.match(steps[SIMULATORS].description, new RegExp(`We create ${NAMES[1]}\\.`))
-})
-
-test('Xcode step cannot install Xcode, it explains how', async () => {
-  withoutXcode()
-  assert.equal(await planIos()[XCODE].apply(), false)
-  assert.ok(output.some((line) => line.includes('App Store')))
-})
-
-test('licence step: asks for the password through sudo, and gives the commands when it fails', async () => {
-  assert.equal(await planIos()[LICENCE].apply(), true)
-  assert.ok(output.some((line) => line.includes('Mac password')))
-
-  lib.acceptLicenseAndInstallComponents.mock.mockImplementation(() => false)
-  assert.equal(await planIos()[LICENCE].apply(), false)
-  assert.ok(output.some((line) => line.includes('sudo xcodebuild -runFirstLaunch')))
-})
-
-test('licence step: needs Xcode first', async () => {
-  withoutXcode()
-  assert.equal(await planIos()[LICENCE].apply(), false)
-  assert.equal(lib.acceptLicenseAndInstallComponents.mock.callCount(), 0)
-})
-
-test('runtime step: downloads the runtime when it is not there yet', async () => {
-  const installed = { value: false }
-  lib.hasRuntime.mock.mockImplementation(() => installed.value)
-  lib.downloadRuntime.mock.mockImplementation(() => (installed.value = true))
-  assert.equal(await planIos()[RUNTIME].apply(), true)
-  assert.equal(lib.downloadRuntime.mock.callCount(), 1)
-  assert.equal(lib.registerDownloadedRuntime.mock.callCount(), 0)
-})
-
-test('runtime step: registers a runtime that Xcode downloaded but did not list (Xcode 27)', async () => {
-  const steps = planIos()
-  lib.hasRuntime.mock.mockImplementation(() => false)
-  lib.registerDownloadedRuntime.mock.mockImplementation(() => true)
-  assert.equal(await steps[RUNTIME].apply(), true)
-  assert.equal(lib.downloadRuntime.mock.callCount(), 1)
-  assert.deepEqual(lib.registerDownloadedRuntime.mock.calls[0].arguments, ['27.0'])
-})
-
-test('runtime step: skips the download when the runtime is already there', async () => {
-  assert.equal(await planIos()[RUNTIME].apply(), true)
-  assert.equal(lib.downloadRuntime.mock.callCount(), 0)
-})
-
-test('runtime step: tells what to check when the runtime cannot be installed', async () => {
-  lib.hasRuntime.mock.mockImplementation(() => false)
-  assert.equal(await planIos()[RUNTIME].apply(), false)
-  assert.ok(output.some((line) => line.includes('disk space')))
-  assert.ok(output.some((line) => line.includes('Settings > Components')))
-})
-
-test('runtime step: needs Xcode first', async () => {
-  withoutXcode()
-  assert.equal(await planIos()[RUNTIME].apply(), false)
-  assert.equal(lib.downloadRuntime.mock.callCount(), 0)
-})
-
-test('simulators step: creates the missing simulators on the runtime of this iOS version', async () => {
-  lib.listSimulators.mock.mockImplementation(() => [NAMES[0]])
-  assert.equal(await planIos()[SIMULATORS].apply(), true)
-  assert.deepEqual(lib.createSimulator.mock.calls.map((c) => c.arguments), [[NAMES[1], '27.0']])
-})
-
-test('simulators step: reports a simulator that could not be created and still tries the others', async () => {
-  lib.listSimulators.mock.mockImplementation(() => [])
-  lib.createSimulator.mock.mockImplementationOnce(() => ({ output: 'Invalid runtime', exitCode: 1 }))
-  assert.equal(await planIos()[SIMULATORS].apply(), false)
-  assert.equal(lib.createSimulator.mock.callCount(), 2)
-  assert.ok(output.some((line) => line.includes('Invalid runtime')))
-})
-
-test('simulators step: needs the runtime first', async () => {
-  const steps = planIos()
-  lib.hasRuntime.mock.mockImplementation(() => false)
-  assert.equal(await steps[SIMULATORS].apply(), false)
-
-  withoutXcode()
-  assert.equal(await planIos()[SIMULATORS].apply(), false)
-  assert.equal(lib.createSimulator.mock.callCount(), 0)
-})
-
-test('a dry run changes nothing and says what it would do', async () => {
-  withoutXcode()
+test('the flags of the setup are given to the module before the plan is run', async () => {
+  FLAGS.yes = false
   FLAGS.dryRun = true
-  const steps = planIos()
-  for (const s of steps.slice(1)) assert.equal(await s.apply(), true)
-  for (const fn of [lib.acceptLicenseAndInstallComponents, lib.downloadRuntime, lib.registerDownloadedRuntime, lib.createSimulator]) {
-    assert.equal(fn.mock.callCount(), 0)
-  }
-  assert.equal(output.filter((line) => line.includes('[dry run]')).length, 4)
+  await setupIos()
+  assert.deepEqual(configure.mock.calls[0].arguments, [{ yes: false, dryRun: true }])
+  assert.equal(runPlan.mock.calls[0].arguments[0], 'This is what we need for the workshop:')
 })
 
-test('setupIos on a ready machine only prints how to start the simulators', async () => {
+test('when iOS is ready, the start hint tells how to start both simulators', async () => {
   assert.equal(await setupIos(), true)
   const text = output.join('\n')
-  assert.match(text, /Everything for iOS is already set up/)
+  assert.match(text, /Start the simulators/)
   assert.match(text, /npm install -g start-ios-simulator/)
   assert.match(text.replace(/\x1b\[[0-9;]*m/g, ''), /^\s*start-ios-simulator$/m)
-  assert.match(text, new RegExp(`xcrun simctl boot ${NAMES[1]}`))
-  assert.match(text, /open -a Simulator \(Xcode 26 and older\) or Device Hub \(Xcode 27\)/)
+  assert.match(text, /xcrun simctl boot Workshop_1_iPhone_17_Pro_iOS_27_0/)
+  assert.match(text, /xcrun simctl boot Workshop_2_iPhone_17_Pro_iOS_27_0/)
+  assert.match(text, /demo app of the workshop is in \/downloads\/appium-workshop-apps/)
 })
 
-test('setupIos stops at the first step that fails', async () => {
-  lib.licenseAccepted.mock.mockImplementation(() => false)
-  lib.acceptLicenseAndInstallComponents.mock.mockImplementation(() => false)
+test('no hint and a failure when the plan was declined or a step failed', async () => {
+  runPlan.mock.mockImplementation(async () => ({ ok: false, applied: [], declined: true }))
   assert.equal(await setupIos(), false)
-  assert.equal(lib.downloadRuntime.mock.callCount(), 0)
+  assert.doesNotMatch(output.join('\n'), /Start the simulators/)
 })

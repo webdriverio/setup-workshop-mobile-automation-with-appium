@@ -4,6 +4,7 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { bootSimulator, listSimulators, shutdownSimulator, waitForBoot } from 'start-ios-simulator'
 import { run, runFile, runFileAsync } from './shell.mjs'
 
 /**
@@ -73,27 +74,19 @@ export async function ensureAndroidDevice({ onStatus = () => {} } = {}) {
   throw new Error('DEVICE_BOOT_TIMEOUT')
 }
 
-const listIosDevices = () => {
-  try {
-    return Object.values(JSON.parse(run('xcrun simctl list devices available -j') ?? '{}').devices ?? {}).flat()
-  } catch {
-    return []
-  }
-}
-
 /** Same as ensureAndroidDevice, for the iOS simulator. */
 export async function ensureIosDevice({ onStatus = () => {} } = {}) {
-  const devices = listIosDevices()
-  const booted = devices.find((d) => d.state === 'Booted')
+  const simulators = listSimulators() ?? []
+  const booted = simulators.find((s) => s.booted)
   if (booted) return { udid: booted.udid, stop: null }
 
-  const target = devices.find((d) => d.name.startsWith('Workshop_')) ?? devices.find((d) => d.name.startsWith('iPhone'))
+  const target = simulators.find((s) => s.name.startsWith('Workshop_')) ?? simulators.find((s) => s.name.startsWith('iPhone'))
   if (!target) throw new Error('NO_DEVICE')
 
   onStatus(`No simulator running, starting ${target.name}...`)
-  if ((await runFileAsync('xcrun', ['simctl', 'boot', target.udid])).exitCode !== 0) throw new Error('DEVICE_BOOT_FAILED')
-  await runFileAsync('xcrun', ['simctl', 'bootstatus', target.udid], { timeout: DEVICE_BOOT_TIMEOUT })
-  return { udid: target.udid, stop: () => runFile('xcrun', ['simctl', 'shutdown', target.udid]) }
+  if (!bootSimulator(target.udid).ok) throw new Error('DEVICE_BOOT_FAILED')
+  await waitForBoot(target.udid, { timeoutMs: DEVICE_BOOT_TIMEOUT })
+  return { udid: target.udid, stop: () => shutdownSimulator(target.udid) }
 }
 
 // ─── The WebdriverIO run ────────────────────────────────────────────────────

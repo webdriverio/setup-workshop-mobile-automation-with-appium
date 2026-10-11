@@ -7,7 +7,12 @@ const run = mock.fn()
 const runFile = mock.fn()
 const runFileAsync = mock.fn()
 const spawn = mock.fn()
+const listSimulators = mock.fn()
+const bootSimulator = mock.fn()
+const waitForBoot = mock.fn(async () => {})
+const shutdownSimulator = mock.fn()
 mock.module('../scripts/lib/shell.mjs', { namedExports: { run, runFile, runFileAsync } })
+mock.module('start-ios-simulator', { namedExports: { listSimulators, bootSimulator, waitForBoot, shutdownSimulator } })
 mock.module('node:child_process', { namedExports: { spawn } })
 const smoke = await import('../scripts/lib/smoke.mjs')
 const { androidCapabilities, iosCapabilities } = await import('../scripts/smoke/capabilities.mjs')
@@ -19,13 +24,14 @@ const realSetTimeout = globalThis.setTimeout
 globalThis.setTimeout = (fn) => realSetTimeout(fn, 0)
 
 const ADB_ONE = 'List of devices attached\nemulator-5554\tdevice\n'
-const sims = (...devices) => JSON.stringify({ devices: { 'iOS 27.0': devices } })
+const sim = (changes) => ({ name: 'iPhone 17', udid: 'U', version: '27.0', booted: false, ...changes })
 
 beforeEach(() => {
-  for (const fn of [run, runFile, runFileAsync, spawn]) {
+  for (const fn of [run, runFile, runFileAsync, spawn, listSimulators, bootSimulator, waitForBoot, shutdownSimulator]) {
     fn.mock.resetCalls()
     fn.mock.mockImplementation(() => undefined)
   }
+  bootSimulator.mock.mockImplementation(() => ({ ok: true, output: '' }))
 })
 
 // ─── capabilities ───────────────────────────────────────────────────────────
@@ -121,42 +127,37 @@ test('giving up on an emulator that never finishes booting', async () => {
 })
 
 test('a booted iOS simulator is used and not stopped', async () => {
-  run.mock.mockImplementation(() => sims({ name: 'iPhone 17', udid: 'U1', state: 'Booted' }))
+  listSimulators.mock.mockImplementation(() => [sim({ udid: 'U1', booted: true })])
   assert.deepEqual(await smoke.ensureIosDevice(), { udid: 'U1', stop: null })
 })
 
 test('without a simulator there is no iOS device to test with', async () => {
-  run.mock.mockImplementation(() => sims({ name: 'Apple Watch', udid: 'W1', state: 'Shutdown' }))
+  listSimulators.mock.mockImplementation(() => [sim({ name: 'Apple Watch' })])
   await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
-  run.mock.mockImplementation(() => 'not json')
+  listSimulators.mock.mockImplementation(() => [])
   await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
-  run.mock.mockImplementation(() => null)
-  await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
-  run.mock.mockImplementation(() => '{}')
+  listSimulators.mock.mockImplementation(() => null)
   await assert.rejects(smoke.ensureIosDevice(), /NO_DEVICE/)
 })
 
 test('a workshop simulator is booted when none runs, and shut down by the caller', async () => {
-  run.mock.mockImplementation(() => sims(
-    { name: 'iPhone 17', udid: 'U1', state: 'Shutdown' },
-    { name: 'Workshop_1_iPhone_17_Pro_iOS_27_0', udid: 'U2', state: 'Shutdown' },
-  ))
-  runFile.mock.mockImplementation(() => result())
-  runFileAsync.mock.mockImplementation(async () => result())
+  listSimulators.mock.mockImplementation(() => [sim({ udid: 'U1' }), sim({ name: 'Workshop_1_iPhone_17_Pro_iOS_27_0', udid: 'U2' })])
   const statuses = []
   const device = await smoke.ensureIosDevice({ onStatus: (m) => statuses.push(m) })
   assert.equal(device.udid, 'U2')
   assert.match(statuses[0], /Workshop_1/)
-  assert.deepEqual(runFileAsync.mock.calls.map((c) => c.arguments[1].slice(0, 2)), [['simctl', 'boot'], ['simctl', 'bootstatus']])
+  assert.equal(bootSimulator.mock.calls[0].arguments[0], 'U2')
+  assert.deepEqual(waitForBoot.mock.calls[0].arguments, ['U2', { timeoutMs: smoke.DEVICE_BOOT_TIMEOUT }])
   device.stop()
-  assert.deepEqual(runFile.mock.calls.at(-1).arguments[1], ['simctl', 'shutdown', 'U2'])
+  assert.equal(shutdownSimulator.mock.calls[0].arguments[0], 'U2')
 })
 
 test('any iPhone simulator will do when the workshop ones are missing, and a failing boot is reported', async () => {
-  run.mock.mockImplementation(() => sims({ name: 'iPhone 17', udid: 'U1', state: 'Shutdown' }))
-  runFileAsync.mock.mockImplementation(async () => result('', 1))
+  listSimulators.mock.mockImplementation(() => [sim({ udid: 'U1' })])
+  bootSimulator.mock.mockImplementation(() => ({ ok: false, output: 'nope' }))
   await assert.rejects(smoke.ensureIosDevice(), /DEVICE_BOOT_FAILED/)
-  assert.equal(runFileAsync.mock.calls[0].arguments[1][2], 'U1')
+  assert.equal(bootSimulator.mock.calls[0].arguments[0], 'U1')
+  assert.equal(waitForBoot.mock.callCount(), 0)
 })
 
 // ─── Appium ─────────────────────────────────────────────────────────────────

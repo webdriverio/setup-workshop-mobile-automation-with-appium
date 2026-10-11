@@ -11,9 +11,11 @@
 
 import { fileURLToPath } from 'node:url'
 import { inspect as inspectAndroid, relaunchWithProxy } from 'start-android-emulator'
+import { inspect as inspectIos } from 'start-ios-simulator'
 import { checkApp } from './checks/apps.mjs'
 import { checkAcceleration, checkAndroidSdk, checkEmulators, checkJava } from './checks/android.mjs'
 import { checkXcode, checkSimulators } from './checks/ios.mjs'
+import { workshopTarget as iosTarget } from './lib/ios.mjs'
 import { checkDisk, checkMemory, checkNetwork } from './checks/machine.mjs'
 import { checkSessions } from './checks/session.mjs'
 import { checkGit, checkNode, checkNpm, checkVsCode } from './checks/tools.mjs'
@@ -73,9 +75,11 @@ if (android) {
 }
 
 if (ios) {
+  // One look at the machine for all the iOS checks
+  const state = await inspectIos()
   header('iOS')
-  await check('Xcode', checkXcode)
-  await check('iOS simulators', checkSimulators)
+  await check('Xcode', () => checkXcode(state))
+  await check('iOS simulators', () => checkSimulators(state, iosTarget(state)))
   await check('iOS demo app', () => checkApp('ios'))
 } else if (!only) {
   header('iOS')

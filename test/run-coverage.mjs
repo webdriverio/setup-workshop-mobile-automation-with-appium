@@ -21,7 +21,7 @@ const MODULES = [
   { module: 'scripts/lib/system.mjs', tests: ['system'] },
   { module: 'scripts/lib/plan.mjs', tests: ['plan'] },
   { module: 'scripts/lib/download.mjs', tests: ['download'] },
-  { module: 'scripts/lib/ios.mjs', tests: ['ios-lib'] },
+  { module: 'scripts/lib/ios.mjs', tests: ['ios'] },
   { module: 'scripts/lib/smoke.mjs', tests: ['smoke'] },
   { module: 'scripts/smoke/capabilities.mjs', tests: ['smoke'] },
   { module: 'scripts/lib/android.mjs', tests: ['android'] },
