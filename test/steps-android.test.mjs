@@ -14,6 +14,10 @@ const apps = { hasApp: mock.fn(() => false), downloadApp: mock.fn() }
 mock.module('../scripts/lib/apps.mjs', {
   namedExports: { ...apps, appsDir: () => '/downloads/appium-workshop-apps', APPS: { android: { size: 123595826 }, ios: { size: 15981903 } } },
 })
+const globalTools = new Set()
+mock.module('../scripts/steps/tool.mjs', {
+  namedExports: { hasGlobalTool: (name) => globalTools.has(name), toolStep: (name) => ({ id: `tool-${name}`, title: name, description: '', done: false }) },
+})
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planAndroidSteps, setupAndroid } = await import('../scripts/steps/android.mjs')
 
@@ -26,6 +30,7 @@ beforeEach(() => {
   for (const fn of [configure, inspect, planAndroid, runPlan]) fn.mock.resetCalls()
   planAndroid.mock.mockImplementation(moduleSteps)
   runPlan.mock.mockImplementation(async () => ({ ok: true, applied: [], declined: false }))
+  globalTools.clear()
   FLAGS.yes = true
   FLAGS.dryRun = false
 })
@@ -38,7 +43,7 @@ test('the plan is made by the module, for the workshop target, on what it found 
 
 test('the demo app comes before the environment variables, the module steps stay as they are', async () => {
   const steps = await planAndroidSteps()
-  assert.deepEqual(steps.map((s) => s.id), ['java', 'tools', 'packages', 'avds', 'app-android', 'env'])
+  assert.deepEqual(steps.map((s) => s.id), ['java', 'tools', 'packages', 'avds', 'app-android', 'tool-start-android-emulator', 'env'])
   assert.equal(steps[0].title, 'java')
 })
 
@@ -84,4 +89,10 @@ test('no hint and a failure when the plan was declined or a step failed', async 
   runPlan.mock.mockImplementation(async () => ({ ok: false, applied: [], declined: true }))
   assert.equal(await setupAndroid(), false)
   assert.doesNotMatch(output.join('\n'), /Start the emulators/)
+})
+
+test('when start-android-emulator is already installed globally, the start hint does not ask to install it', async () => {
+  globalTools.add('start-android-emulator')
+  await setupAndroid()
+  assert.doesNotMatch(output.join('\n'), /npm install -g start-android-emulator/)
 })

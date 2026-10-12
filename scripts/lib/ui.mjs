@@ -40,3 +40,22 @@ export async function ask(message, defaultValue = true) {
   if (FLAGS.yes) return defaultValue
   return confirm({ message, default: defaultValue })
 }
+
+const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+
+/**
+ * One line with a spinner and the seconds that passed, flush left like the plan that follows it. Call the returned
+ * function to take the line away. Without a terminal nothing is printed, because a line cannot be taken away there.
+ */
+export function startSpinner(text, stream = process.stdout) {
+  if (!stream.isTTY) return () => {}
+  const started = Date.now()
+  let frame = 0
+  const draw = () => stream.write(`\r\x1b[2K${CYAN}${FRAMES[frame++ % FRAMES.length]}${RESET} ${DIM}${text} ${Math.round((Date.now() - started) / 1000)}s${RESET}`)
+  draw()
+  const timer = setInterval(draw, 100)
+  return () => {
+    clearInterval(timer)
+    stream.write('\r\x1b[2K')
+  }
+}

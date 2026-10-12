@@ -14,6 +14,10 @@ const apps = { hasApp: mock.fn(() => false), downloadApp: mock.fn() }
 mock.module('../scripts/lib/apps.mjs', {
   namedExports: { ...apps, appsDir: () => '/downloads/appium-workshop-apps', APPS: { android: { size: 123595826 }, ios: { size: 15981903 } } },
 })
+const globalTools = new Set()
+mock.module('../scripts/steps/tool.mjs', {
+  namedExports: { hasGlobalTool: (name) => globalTools.has(name), toolStep: (name) => ({ id: `tool-${name}`, title: name, description: '', done: false }) },
+})
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planIosSteps, setupIos } = await import('../scripts/steps/ios.mjs')
 
@@ -26,6 +30,7 @@ beforeEach(() => {
   for (const fn of [configure, inspect, planIos, runPlan, workshopTarget]) fn.mock.resetCalls()
   planIos.mock.mockImplementation(moduleSteps)
   runPlan.mock.mockImplementation(async () => ({ ok: true, applied: [], declined: false }))
+  globalTools.clear()
   FLAGS.yes = true
   FLAGS.dryRun = false
 })
@@ -39,7 +44,7 @@ test('the plan is made by the module, for the workshop target, on what it found 
 
 test('the demo app comes after the module steps, which stay as they are', async () => {
   const steps = await planIosSteps()
-  assert.deepEqual(steps.map((s) => s.id), ['xcode', 'license', 'runtime', 'simulators', 'app-ios'])
+  assert.deepEqual(steps.map((s) => s.id), ['xcode', 'license', 'runtime', 'simulators', 'app-ios', 'tool-start-ios-simulator'])
   assert.equal(steps[0].title, 'xcode')
 })
 
@@ -72,4 +77,10 @@ test('no hint and a failure when the plan was declined or a step failed', async 
   runPlan.mock.mockImplementation(async () => ({ ok: false, applied: [], declined: true }))
   assert.equal(await setupIos(), false)
   assert.doesNotMatch(output.join('\n'), /Start the simulators/)
+})
+
+test('when start-ios-simulator is already installed globally, the start hint does not ask to install it', async () => {
+  globalTools.add('start-ios-simulator')
+  await setupIos()
+  assert.doesNotMatch(output.join('\n'), /npm install -g start-ios-simulator/)
 })
