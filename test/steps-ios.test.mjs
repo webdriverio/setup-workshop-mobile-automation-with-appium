@@ -16,7 +16,7 @@ mock.module('../scripts/lib/apps.mjs', {
 })
 const globalTools = new Set()
 mock.module('../scripts/steps/tool.mjs', {
-  namedExports: { hasGlobalTool: (name) => globalTools.has(name), toolStep: (name) => ({ id: `tool-${name}`, title: name, description: '', done: false }) },
+  namedExports: { knownGlobalTool: (name) => globalTools.has(name), toolStep: async (name) => ({ id: `tool-${name}`, title: name, description: '', done: false }) },
 })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planIosSteps, setupIos } = await import('../scripts/steps/ios.mjs')
@@ -83,4 +83,16 @@ test('when start-ios-simulator is already installed globally, the start hint doe
   globalTools.add('start-ios-simulator')
   await setupIos()
   assert.doesNotMatch(output.join('\n'), /npm install -g start-ios-simulator/)
+})
+
+test('the closing hint needs no new look at the machine when only the app or the command was set up', async () => {
+  runPlan.mock.mockImplementation(async () => ({ ok: true, applied: ['app-ios', 'tool-start-ios-simulator'], declined: false }))
+  await setupIos()
+  assert.equal(inspect.mock.callCount(), 1)
+})
+
+test('the closing hint looks at the machine again when a step changed it', async () => {
+  runPlan.mock.mockImplementation(async () => ({ ok: true, applied: ['simulators'], declined: false }))
+  await setupIos()
+  assert.equal(inspect.mock.callCount(), 2)
 })

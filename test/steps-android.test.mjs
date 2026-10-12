@@ -16,7 +16,7 @@ mock.module('../scripts/lib/apps.mjs', {
 })
 const globalTools = new Set()
 mock.module('../scripts/steps/tool.mjs', {
-  namedExports: { hasGlobalTool: (name) => globalTools.has(name), toolStep: (name) => ({ id: `tool-${name}`, title: name, description: '', done: false }) },
+  namedExports: { knownGlobalTool: (name) => globalTools.has(name), toolStep: async (name) => ({ id: `tool-${name}`, title: name, description: '', done: false }) },
 })
 const { FLAGS } = await import('../scripts/lib/ui.mjs')
 const { planAndroidSteps, setupAndroid } = await import('../scripts/steps/android.mjs')

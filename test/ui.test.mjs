@@ -46,3 +46,19 @@ test('the colour helpers wrap the text and keep it readable', () => {
     assert.notEqual(paint('text'), 'text')
   }
 })
+
+test('the spinner draws a line in a terminal and takes it away again', async () => {
+  const { startSpinner } = await import('../scripts/lib/ui.mjs')
+  const written = []
+  const stop = startSpinner('Checking...', { isTTY: true, write: (text) => written.push(text) })
+  assert.match(written[0], /Checking\.\.\. 0s/)
+  stop()
+  assert.equal(written.at(-1), '\r\x1b[2K')
+})
+
+test('the spinner prints nothing without a terminal', async () => {
+  const { startSpinner } = await import('../scripts/lib/ui.mjs')
+  const written = []
+  startSpinner('Checking...', { isTTY: false, write: (text) => written.push(text) })()
+  assert.deepEqual(written, [])
+})

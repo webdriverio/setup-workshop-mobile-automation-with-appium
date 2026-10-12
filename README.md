@@ -301,7 +301,7 @@ The script finds and reuses them. It only downloads what is missing, and it only
 
 ### Start the emulators
 
-Install [start-android-emulator](https://github.com/wswebcreation/start-android-emulator) once, globally. It is the one-stop shop for Android emulators, and `npm run setup` is built on top of it:
+[start-android-emulator](https://github.com/wswebcreation/start-android-emulator) is the one-stop shop for Android emulators, and `npm run setup` is built on top of it. The setup installs it globally for you. If that did not work, install it yourself:
 
 ```bash
 npm install -g start-android-emulator
@@ -352,7 +352,7 @@ See [docs/xcode-ios.md](docs/xcode-ios.md) for the details and for what to do wh
 
 ### Start the simulators
 
-Install [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator) once, globally. It is the one-stop shop for iOS simulators, and `npm run setup` is built on top of it:
+[start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator) is the one-stop shop for iOS simulators, and `npm run setup` is built on top of it. The setup installs it globally for you. If that did not work, install it yourself:
 
 ```bash
 npm install -g start-ios-simulator
