@@ -36,7 +36,7 @@ Before the workshop starts, make sure your machine is set up correctly. Dependin
 
 ## How it works
 
-You install **Node.js** yourself. After that, two commands do the rest:
+You install **Node.js** yourself and install the npm packages in the project using `npm install`. After that, two commands do the rest:
 
 ```bash
 npm run setup   # installs and configures what is missing (Android, iOS)
