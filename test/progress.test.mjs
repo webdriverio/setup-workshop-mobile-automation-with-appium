@@ -58,3 +58,36 @@ test('a line that is wider than the terminal is cut off, so it never wraps', () 
   assert.ok(lastLine.length <= 30)
   assert.match(lastLine, /…$/)
 })
+
+test('in a terminal a printed line appears below the tasks, which keep being rewritten above it', () => {
+  const stream = fakeStream()
+  const progress = createProgress(['Android', 'iOS'], { stream, interactive: true })
+  progress.print('Hello')
+  progress.print('World')
+  stream.chunks.length = 0
+  progress.update('Android', 'Busy')
+  progress.stop()
+  const text = stream.text()
+  assert.ok(text.startsWith('\x1b[4A'), 'moves up over the two tasks and the two printed lines')
+  assert.ok(text.endsWith('\x1b[2B'), 'moves back down below the printed lines')
+  assert.match(strip(stream.chunks.join('')), /\[Android\] Busy/)
+})
+
+test('a printed line that is wider than the terminal counts for the rows it takes', () => {
+  const stream = { ...fakeStream(), columns: 10 }
+  const progress = createProgress(['Android'], { stream, interactive: true })
+  progress.print('x'.repeat(25))
+  progress.print('\x1b[1mbold\x1b[0m')
+  stream.chunks.length = 0
+  progress.update('Android', 'Busy')
+  progress.stop()
+  assert.ok(stream.text().startsWith('\x1b[5A'), 'one task, three rows for the long line, one for the short line')
+})
+
+test('without a terminal a printed line is just a line', () => {
+  const stream = fakeStream()
+  const progress = createProgress(['Android'], { stream, interactive: false })
+  progress.print('Hello')
+  progress.print()
+  assert.equal(stream.text(), 'Hello\n\n')
+})

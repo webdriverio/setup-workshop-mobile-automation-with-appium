@@ -13,6 +13,8 @@ export function createProgress(names, { stream = process.stdout, interactive = B
   const lines = new Map(names.map((name) => [name, { text: 'Waiting...', state: 'busy' }]))
   let frame = 0
   let drawn = false
+  // The rows of text printed below the task lines, which the cursor has to get past to reach the task lines
+  let below = 0
 
   const render = (name, { text, state }) => {
     // A line that wraps would take two rows and break the cursor movement, so it must fit the terminal
@@ -25,8 +27,9 @@ export function createProgress(names, { stream = process.stdout, interactive = B
   }
 
   const draw = () => {
-    if (drawn) stream.write(`\x1b[${lines.size}A`)
+    if (drawn) stream.write(`\x1b[${lines.size + below}A`)
     for (const [name, line] of lines) stream.write(`\r\x1b[2K${render(name, line)}\n`)
+    if (below > 0) stream.write(`\x1b[${below}B`)
     drawn = true
   }
 
@@ -47,6 +50,11 @@ export function createProgress(names, { stream = process.stdout, interactive = B
   if (interactive) draw()
 
   return {
+    /** Print a line below the task lines, which keep running above it. A line that wraps takes more than one row. */
+    print: (text = '') => {
+      stream.write(`${text}\n`)
+      if (interactive) below += Math.max(1, Math.ceil(text.replace(/\x1b\[[0-9;]*m/g, '').length / (stream.columns ?? 80)))
+    },
     update: (name, text) => set(name, text, 'busy'),
     done: (name, passed, text) => {
       set(name, text, passed ? 'ok' : 'fail')

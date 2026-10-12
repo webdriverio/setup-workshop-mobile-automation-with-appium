@@ -29,11 +29,14 @@ export async function planAndroidSteps() {
 /** Tell people how to start the emulators once everything is in place. */
 function printStartHint(newTerminal, hasTool) {
   console.log(`\n${bold('Start the emulators')}${newTerminal ? ' (in a new terminal, so the new settings apply)' : ''}\n`)
+  info('Start both workshop emulators with one command:')
+  info('  npm run start:android')
+  info('Or pick them yourself.')
   if (!hasTool) {
     info('Install the tool that this setup is built on, once:')
     info('  npm install -g start-android-emulator')
   }
-  info('Pick the emulators from a list (run it twice for two emulators):')
+  info('Pick an emulator from a list (run it twice for two emulators):')
   info('  start-android-emulator')
   info('Or go bare metal, one emulator per terminal:')
   AVD_NAMES.forEach((name) => info(`  emulator -avd ${name}`))

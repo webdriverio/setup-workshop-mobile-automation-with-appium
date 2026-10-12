@@ -17,11 +17,14 @@ export async function planIosSteps(state) {
 /** Tell people how to start the simulators once everything is in place. */
 function printStartHint(names, hasTool) {
   console.log(`\n${bold('Start the simulators')}\n`)
+  info('Start both workshop simulators with one command:')
+  info('  npm run start:ios')
+  info('Or pick them yourself.')
   if (!hasTool) {
     info('Install the tool that this setup is built on, once:')
     info('  npm install -g start-ios-simulator')
   }
-  info('Pick the simulators from a list (run it twice for two simulators):')
+  info('Pick a simulator from a list (run it twice for two simulators):')
   info('  start-ios-simulator')
   info('Or go bare metal, one command per simulator:')
   names.forEach((name) => info(`  xcrun simctl boot ${name}`))

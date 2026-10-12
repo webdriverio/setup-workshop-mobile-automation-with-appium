@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "check": "node scripts/check-setup.mjs",
+    "start:devices": "node scripts/start-devices.mjs",
+    "start:android": "node scripts/start-devices.mjs android",
+    "start:ios": "node scripts/start-devices.mjs ios",
     "setup": "node scripts/setup.mjs",
     "test": "node --experimental-test-module-mocks --test \"test/**/*.test.mjs\"",
     "test:watch": "node --experimental-test-module-mocks --test --watch \"test/**/*.test.mjs\"",

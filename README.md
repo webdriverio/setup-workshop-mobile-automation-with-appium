@@ -301,6 +301,14 @@ The script finds and reuses them. It only downloads what is missing, and it only
 
 ### Start the emulators
 
+Start both workshop emulators with one command, and wait until they are ready:
+
+```bash
+npm run start:android
+```
+
+It skips an emulator that is already running, so you can run it as often as you like. `npm run start:devices` starts the emulators and, on a Mac, the simulators together. If you want to pick one yourself, use the tool below.
+
 [start-android-emulator](https://github.com/wswebcreation/start-android-emulator) is the one-stop shop for Android emulators, and `npm run setup` is built on top of it. The setup installs it globally for you. If that did not work, install it yourself:
 
 ```bash
@@ -351,6 +359,14 @@ See [docs/xcode-ios.md](docs/xcode-ios.md) for the details and for what to do wh
 > **Known issue with Xcode 27:** a downloaded iOS version can be missing when you add a simulator yourself in Xcode (**Open Developer Tool → Device Hub**), so you cannot create one. `npm run setup` works around this. It may be fixed in a later Xcode version. Details in [docs/xcode-ios.md](docs/xcode-ios.md#known-issue-xcode-27-does-not-list-a-downloaded-ios-version).
 
 ### Start the simulators
+
+Start both workshop simulators with one command, and wait until they are ready:
+
+```bash
+npm run start:ios
+```
+
+It skips a simulator that is already running, so you can run it as often as you like. If you want to pick one yourself, use the tool below.
 
 [start-ios-simulator](https://github.com/wswebcreation/start-ios-simulator) is the one-stop shop for iOS simulators, and `npm run setup` is built on top of it. The setup installs it globally for you. If that did not work, install it yourself:
 

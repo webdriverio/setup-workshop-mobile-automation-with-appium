@@ -25,6 +25,8 @@ const MODULES = [
   { module: 'scripts/lib/smoke.mjs', tests: ['smoke'] },
   { module: 'scripts/smoke/capabilities.mjs', tests: ['smoke'] },
   { module: 'scripts/lib/android.mjs', tests: ['android'] },
+  { module: 'scripts/lib/devices.mjs', tests: ['devices'] },
+  { module: 'scripts/lib/workshop.mjs', tests: ['workshop'] },
   { module: 'scripts/checks/tools.mjs', tests: ['checks-tools', 'checks-tools-mac', 'checks-tools-windows'] },
   { module: 'scripts/checks/machine.mjs', tests: ['checks-machine'] },
   { module: 'scripts/checks/apps.mjs', tests: ['checks-apps'] },
@@ -35,6 +37,7 @@ const MODULES = [
   { module: 'scripts/steps/app.mjs', tests: ['steps-app'] },
   { module: 'scripts/steps/vscode.mjs', tests: ['steps-vscode'] },
   { module: 'scripts/steps/android.mjs', tests: ['steps-android'] },
+  { module: 'scripts/steps/tool.mjs', tests: ['steps-tool'] },
   { module: 'scripts/wizard.mjs', tests: ['wizard', 'wizard-no-mac'] },
 ]
 

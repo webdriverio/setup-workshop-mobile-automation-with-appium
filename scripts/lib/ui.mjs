@@ -28,6 +28,7 @@ export const bold   = (msg) => `${BOLD}${msg}${RESET}`
 export const green  = (msg) => `${GREEN}${msg}${RESET}`
 export const red    = (msg) => `${RED}${msg}${RESET}`
 export const yellow = (msg) => `${YELLOW}${msg}${RESET}`
+export const cyan   = (msg) => `${CYAN}${msg}${RESET}`
 export const dim    = (msg) => `${DIM}${msg}${RESET}`
 
 export const FLAGS = {
