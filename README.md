@@ -293,7 +293,10 @@ When the script is done, **open a new terminal** so the environment variables ap
 ```bash
 npm run setup -- --dry-run   # show what would happen, change nothing
 npm run setup -- --yes       # don't ask questions, set up everything for your machine
+npm run setup -- --debug     # log every command that is run, with its exit code and output (Android)
 ```
+
+Something fails and you want to know why? Run `npm run setup -- --debug` and put the output in your issue, see [Something fails and you cannot fix it?](#something-fails-and-you-cannot-fix-it).
 
 ### Already have Java or an Android SDK?
 
@@ -447,7 +450,7 @@ When the check fails it saves a report with everything it found (your system, th
 Then open an issue, we will help you:
 
 1. Go to [New issue](https://github.com/webdriverio/setup-workshop-mobile-automation-with-appium/issues/new/choose) and choose **Setup problem**. The form asks for what we need.
-2. Drag `workshop-check-report.txt` into the form. If `npm run setup` is what fails, there is no report: copy the last lines of your terminal into the form instead.
+2. Drag `workshop-check-report.txt` into the form. If `npm run setup` is what fails, there is no report: run it again with `npm run setup -- --debug` and copy the output of your terminal into the form instead.
 3. Mention **@wswebcreation** in the issue, so it reaches Wim right away. (The form also assigns it to Wim.)
 
 The issue is public. The report has paths on your computer (with your user name) and no passwords or tokens, remove anything you do not want to share.

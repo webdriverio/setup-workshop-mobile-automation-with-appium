@@ -34,6 +34,7 @@ export const dim    = (msg) => `${DIM}${msg}${RESET}`
 export const FLAGS = {
   yes: process.argv.includes('--yes') || !process.stdin.isTTY,
   dryRun: process.argv.includes('--dry-run'),
+  debug: process.argv.includes('--debug'),
 }
 
 /** Ask a yes/no question. With --yes (or no TTY) the default answer is taken. */

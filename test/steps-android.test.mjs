@@ -64,7 +64,7 @@ test('the flags of the setup are given to the module before the plan is run', as
   FLAGS.yes = false
   FLAGS.dryRun = true
   await setupAndroid()
-  assert.deepEqual(configure.mock.calls[0].arguments, [{ yes: false, dryRun: true }])
+  assert.deepEqual(configure.mock.calls[0].arguments, [{ yes: false, dryRun: true, debug: false }])
   assert.equal(runPlan.mock.calls[0].arguments[0], 'This is what we need for the workshop:')
 })
 

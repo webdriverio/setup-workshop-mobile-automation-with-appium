@@ -46,7 +46,7 @@ function printStartHint(newTerminal, hasTool) {
 
 export async function setupAndroid() {
   header('Android')
-  configure({ yes: FLAGS.yes, dryRun: FLAGS.dryRun })
+  configure({ yes: FLAGS.yes, dryRun: FLAGS.dryRun, debug: FLAGS.debug })
   const stopSpinner = startSpinner('Checking your machine...')
   let steps
   try {
