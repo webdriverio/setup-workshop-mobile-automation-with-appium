@@ -83,8 +83,8 @@ body:
     attributes:
       label: Is this a laptop from your company, or are you behind a proxy, firewall or VPN?
       options:
-        - No
-        - Yes
+        - "No"
+        - "Yes"
         - Not sure
     validations:
       required: false
